@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Ping — Chat Better</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getStorage } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+
+    // ⚠️  REPLACE with your Firebase project config
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    const app  = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getFirestore(app);
+    const storage = getStorage(app);
+    const provider = new GoogleAuthProvider();
+
+    window.__firebase = { auth, db, storage, provider, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged };
+  </script>
+</head>
+<body>
+
+<!-- ───── LOGIN SCREEN ───── -->
+<div id="screen-login" class="screen active">
+  <div class="login-bg">
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="orb orb3"></div>
+  </div>
+  <div class="login-card glass">
+    <div class="brand">
+      <span class="brand-icon">⚡</span>
+      <h1 class="brand-name">Ping</h1>
+      <p class="brand-tagline">Chat. Better. Always.</p>
+    </div>
+    <button id="btn-google-login" class="btn-google">
+      <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.2l6.8-6.8C35.7 2.5 30.2 0 24 0 14.7 0 6.7 5.5 2.8 13.5l7.9 6.1C12.6 13.4 17.9 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17z"/><path fill="#FBBC05" d="M10.7 28.4A14.9 14.9 0 0 1 9.5 24c0-1.5.3-3 .7-4.4L2.3 13.5A23.9 23.9 0 0 0 0 24c0 3.8.9 7.4 2.4 10.6l8.3-6.2z"/><path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.7 2.3-7.7 2.3-6.1 0-11.3-4-13.2-9.6l-8.1 6.3C6.6 42.5 14.7 48 24 48z"/></svg>
+      Continue with Google
+    </button>
+  </div>
+</div>
+
+<!-- ───── PROFILE SETUP SCREEN ───── -->
+<div id="screen-profile" class="screen">
+  <div class="setup-wrap glass">
+    <h2>Set up your profile</h2>
+    <p class="sub">This is how friends will see you</p>
+    <div class="avatar-picker" id="avatar-preview-wrap">
+      <img id="avatar-preview" src="https://api.dicebear.com/8.x/lorelei/svg?seed=default" alt="avatar" />
+      <label class="avatar-edit-btn" for="avatar-upload">✏️</label>
+      <input type="file" id="avatar-upload" accept="image/*" hidden />
+    </div>
+    <input id="input-displayname" class="input-field" type="text" placeholder="Display name" maxlength="30" />
+    <button id="btn-save-profile" class="btn-primary">Save & Continue →</button>
+  </div>
+</div>
+
+<!-- ───── MAIN APP SCREEN ───── -->
+<div id="screen-app" class="screen">
+  <!-- Sidebar -->
+  <aside class="sidebar glass">
+    <div class="sidebar-header">
+      <div class="my-avatar-wrap">
+        <img id="my-avatar" src="" alt="me" />
+        <span class="online-dot"></span>
+      </div>
+      <span id="my-name" class="my-name"></span>
+      <button id="btn-signout" class="icon-btn" title="Sign out">⏻</button>
+    </div>
+
+    <div class="sidebar-tabs">
+      <button class="tab-btn active" data-tab="chats">💬 Chats</button>
+      <button class="tab-btn" data-tab="friends">👥 Friends</button>
+    </div>
+
+    <!-- CHATS TAB -->
+    <div id="tab-chats" class="tab-panel active">
+      <div id="chats-list" class="list-container"></div>
+    </div>
+
+    <!-- FRIENDS TAB -->
+    <div id="tab-friends" class="tab-panel">
+      <div class="add-friend-row">
+        <input id="input-friend-search" class="input-field small" type="text" placeholder="Search by display name…" />
+        <button id="btn-add-friend" class="btn-icon-round">+</button>
+      </div>
+      <div id="friends-requests" class="section-label" style="display:none">Requests</div>
+      <div id="requests-list" class="list-container"></div>
+      <div class="section-label">Friends</div>
+      <div id="friends-list" class="list-container"></div>
+    </div>
+  </aside>
+
+  <!-- Chat Panel -->
+  <main class="chat-panel">
+    <div id="chat-empty" class="chat-empty">
+      <span class="empty-icon">⚡</span>
+      <p>Select a chat to start messaging</p>
+    </div>
+
+    <div id="chat-active" class="chat-active" style="display:none">
+      <header class="chat-header glass">
+        <img id="chat-peer-avatar" src="" alt="" />
+        <div class="chat-peer-info">
+          <span id="chat-peer-name"></span>
+          <span id="chat-peer-status" class="peer-status"></span>
+        </div>
+      </header>
+
+      <div id="messages-container" class="messages-container"></div>
+
+      <footer class="chat-footer glass">
+        <label class="attach-btn" for="img-upload">📎</label>
+        <input type="file" id="img-upload" accept="image/*" hidden />
+        <input id="msg-input" class="msg-input" type="text" placeholder="Message…" autocomplete="off" />
+        <button id="emoji-btn" class="icon-btn emoji-toggle">😊</button>
+        <button id="send-btn" class="btn-send">↑</button>
+      </footer>
+
+      <div id="emoji-picker" class="emoji-picker glass" style="display:none">
+        <div class="emoji-grid" id="emoji-grid"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="app.js" type="module"></script>
+</body>
+</html>
