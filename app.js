@@ -1036,8 +1036,8 @@ async function loadGifs(searchQuery) {
   try {
     // FIX: API key is now a proper string (was broken variable reference before)
     const endpoint = searchQuery
-      ? `https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_KEY}&q=${encodeURIComponent(searchQuery)}&limit=24&rating=g`
-      : `https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_KEY}&limit=24&rating=g`;
+      ? `https://api.giphy.com/v1/gifs/search?api_key=${X9TJ3cb1am8tDiYXGHpnHzFPWvkxSAwz}&q=${encodeURIComponent(searchQuery)}&limit=24&rating=g`
+      : `https://api.giphy.com/v1/gifs/trending?api_key=${X9TJ3cb1am8tDiYXGHpnHzFPWvkxSAwz}&limit=24&rating=g`;
 
     const res = await fetch(endpoint);
     if (!res.ok) throw new Error(`Giphy error ${res.status}`);
