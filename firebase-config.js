@@ -3,11 +3,11 @@
 //  Go to: Firebase Console → Project Settings → Your Apps → SDK setup
 // ============================================================
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyAx30l44ndzwO78pF8lcKetFrmoJBV1r44",
+  authDomain: "stream-44508.firebaseapp.com",
+  databaseURL: "https://console.firebase.google.com/u/0/project/stream-44508/settings/general/web:Njk3MDdjZTgtZDliMS00NGUwLWI2NmItYzgzMjExZDZkZDFl",
+  projectId: "stream-44508",
+  storageBucket: "stream-44508.firebasestorage.app",
+  messagingSenderId: "187973535676",
+  appId: "1:187973535676:web:f6f6619795c1188b554db9"
 };
