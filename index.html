@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>StreamCast</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #080b12;
+    --surface: #0f1420;
+    --border: #1e2535;
+    --accent: #e63f6a;
+    --accent2: #3f8ee6;
+    --text: #f0f4ff;
+    --muted: #6b7a99;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    overflow-x: hidden;
+  }
+
+  /* Animated background blobs */
+  .bg-orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.15;
+    pointer-events: none;
+    animation: drift 12s ease-in-out infinite alternate;
+  }
+  .bg-orb.a { width: 500px; height: 500px; background: var(--accent); top: -100px; left: -100px; }
+  .bg-orb.b { width: 400px; height: 400px; background: var(--accent2); bottom: -80px; right: -80px; animation-delay: -6s; }
+
+  @keyframes drift {
+    from { transform: translate(0,0) scale(1); }
+    to   { transform: translate(40px, 30px) scale(1.1); }
+  }
+
+  .card {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 52px 44px;
+    max-width: 480px;
+    width: 100%;
+    text-align: center;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 32px 80px rgba(0,0,0,0.5);
+    animation: fadeUp 0.6s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 2.4rem;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, #fff 40%, var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+  }
+
+  .tagline {
+    color: var(--muted);
+    font-size: 0.95rem;
+    margin-bottom: 40px;
+    line-height: 1.6;
+  }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--muted);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin: 28px 0;
+  }
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 16px 24px;
+    border-radius: 14px;
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    border: none;
+    transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+    text-decoration: none;
+    text-align: center;
+  }
+  .btn:active { transform: scale(0.97); }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), #c0305a);
+    color: #fff;
+    box-shadow: 0 8px 32px rgba(230,63,106,0.35);
+  }
+  .btn-primary:hover { box-shadow: 0 12px 40px rgba(230,63,106,0.5); transform: translateY(-1px); }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { background: var(--border); }
+
+  .join-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 15px 18px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+  input::placeholder { color: var(--muted); }
+  input:focus { border-color: var(--accent2); }
+
+  .join-btn {
+    padding: 15px 22px;
+    background: linear-gradient(135deg, var(--accent2), #2a6fc4);
+    color: #fff;
+    border: none;
+    border-radius: 14px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 8px 28px rgba(63,142,230,0.3);
+  }
+  .join-btn:hover { transform: translateY(-1px); box-shadow: 0 12px 36px rgba(63,142,230,0.45); }
+  .join-btn:active { transform: scale(0.97); }
+
+  .note {
+    margin-top: 28px;
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .pulse-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    background: #4caf76;
+    border-radius: 50%;
+    margin-right: 6px;
+    animation: pulse 2s ease infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(76,175,118,0.6); }
+    50% { box-shadow: 0 0 0 6px rgba(76,175,118,0); }
+  }
+</style>
+</head>
+<body>
+<div class="bg-orb a"></div>
+<div class="bg-orb b"></div>
+
+<div class="card">
+  <div class="logo">StreamCast</div>
+  <p class="tagline">Share your screen live — no apps, no OBS, no setup.<br>Works great on iPad &amp; desktop.</p>
+
+  <a href="stream.html" class="btn btn-primary">🔴 Start Streaming</a>
+
+  <div class="divider">or join a stream</div>
+
+  <div class="join-row">
+    <input type="text" id="roomInput" placeholder="Enter stream code…" maxlength="20"
+      autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <button class="join-btn" onclick="joinRoom()">Watch</button>
+  </div>
+
+  <p class="note">
+    <span class="pulse-dot"></span>
+    Streams are live &amp; peer-to-peer. Your stream code appears after you start.
+  </p>
+</div>
+
+<script>
+function joinRoom() {
+  const code = document.getElementById('roomInput').value.trim().toUpperCase();
+  if (!code) { document.getElementById('roomInput').focus(); return; }
+  window.location.href = `watch.html?room=${encodeURIComponent(code)}`;
+}
+document.getElementById('roomInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') joinRoom();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>StreamCast – Watch</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #080b12; --surface: #0f1420; --border: #1e2535;
+    --accent: #e63f6a; --accent2: #3f8ee6; --text: #f0f4ff; --muted: #6b7a99;
+  }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; padding: 24px 16px; gap: 16px;
+  }
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; max-width: 900px;
+  }
+  .logo { font-family:'Syne',sans-serif; font-weight:800; font-size:1.4rem;
+    background:linear-gradient(135deg,#fff 40%,var(--accent));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  }
+  .back { color:var(--muted); text-decoration:none; font-size:0.9rem; transition:color .2s; }
+  .back:hover { color:var(--text); }
+
+  /* State screens */
+  .state-card {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:20px; padding:40px 32px; max-width:480px; width:100%;
+    text-align:center; box-shadow:0 16px 60px rgba(0,0,0,0.4);
+    animation: fadeUp .5s ease both;
+  }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+  h1 { font-family:'Syne',sans-serif; font-size:1.5rem; margin-bottom:10px; }
+  p.sub { color:var(--muted); font-size:.9rem; line-height:1.6; margin-bottom:24px; }
+
+  .spinner {
+    width:48px; height:48px; border:3px solid var(--border);
+    border-top-color:var(--accent2); border-radius:50%;
+    animation:spin 0.8s linear infinite; margin:0 auto 24px;
+  }
+  @keyframes spin { to{transform:rotate(360deg)} }
+
+  .live-badge {
+    display:inline-flex; align-items:center; gap:6px;
+    background:var(--accent); color:#fff;
+    font-family:'Syne',sans-serif; font-weight:700; font-size:.75rem; letter-spacing:.08em;
+    padding:5px 14px; border-radius:99px; margin-bottom:12px;
+  }
+  .live-dot { width:7px; height:7px; background:#fff; border-radius:50%; animation:blink 1s ease infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  /* Video */
+  #videoWrap {
+    width:100%; max-width:900px;
+    background:#000; border-radius:18px; overflow:hidden;
+    aspect-ratio:16/9;
+    box-shadow:0 0 0 1px var(--border), 0 24px 80px rgba(0,0,0,0.6);
+    display:none;
+    position:relative;
+  }
+  video {
+    width:100%; height:100%; object-fit:contain;
+    display:block;
+    /* iPad: enable full-screen inline */
+    -webkit-playsinline: true;
+  }
+
+  /* Controls overlay */
+  .controls {
+    position:absolute; bottom:0; left:0; right:0;
+    padding:40px 20px 16px;
+    background:linear-gradient(transparent, rgba(0,0,0,0.7));
+    display:flex; align-items:center; justify-content:space-between;
+    opacity:0; transition:opacity .3s;
+  }
+  #videoWrap:hover .controls, #videoWrap:focus-within .controls { opacity:1; }
+  /* Always visible on touch */
+  @media (hover:none) { .controls { opacity:1 !important; } }
+
+  .ctrl-btn {
+    background:rgba(255,255,255,0.12); border:none; color:#fff;
+    border-radius:10px; padding:10px 16px; font-size:1.1rem;
+    cursor:pointer; backdrop-filter:blur(8px);
+    transition:background .2s;
+  }
+  .ctrl-btn:hover { background:rgba(255,255,255,0.22); }
+
+  .vol-row { display:flex; align-items:center; gap:8px; }
+  input[type=range] {
+    width:80px; accent-color:var(--accent2);
+    -webkit-appearance:none; height:4px; border-radius:2px;
+    background:rgba(255,255,255,0.3);
+  }
+
+  /* Info bar */
+  .info-bar {
+    width:100%; max-width:900px;
+    display:none; align-items:center; justify-content:space-between;
+    flex-wrap:wrap; gap:8px;
+    padding:12px 18px;
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  }
+  .room-tag { font-size:.82rem; color:var(--muted); }
+  .room-tag span { color:var(--accent2); font-weight:600; font-size:.95rem; letter-spacing:.05em; }
+
+  .btn {
+    padding:12px 22px; border-radius:12px;
+    font-family:'Syne',sans-serif; font-size:.9rem; font-weight:700;
+    cursor:pointer; border:none; transition:transform .15s, box-shadow .15s;
+  }
+  .btn-blue {
+    background:linear-gradient(135deg,var(--accent2),#2a6fc4); color:#fff;
+    box-shadow:0 6px 20px rgba(63,142,230,.3);
+  }
+  .btn-blue:hover { transform:translateY(-1px); }
+  .btn-muted { background:var(--border); color:var(--muted); }
+
+  /* No-room entry */
+  input.code-input {
+    width:100%; background:var(--bg); border:1px solid var(--border);
+    border-radius:12px; padding:15px 18px; color:var(--text);
+    font-family:'Syne',sans-serif; font-size:1.4rem; font-weight:700;
+    letter-spacing:.2em; text-align:center; outline:none;
+    text-transform:uppercase; -webkit-appearance:none;
+    transition:border-color .2s; margin-bottom:14px;
+  }
+  .code-input:focus { border-color:var(--accent2); }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">StreamCast</div>
+  <a href="index.html" class="back">← Home</a>
+</header>
+
+<!-- States -->
+<div id="stateCard" class="state-card">
+  <div id="stateContent">Loading…</div>
+</div>
+
+<!-- Video player (hidden until stream received) -->
+<div id="videoWrap">
+  <video id="remoteVideo" autoplay playsinline webkit-playsinline></video>
+  <div class="controls">
+    <div class="vol-row">
+      <button class="ctrl-btn" id="muteBtn" onclick="toggleMute()">🔊</button>
+      <input type="range" id="volSlider" min="0" max="1" step="0.05" value="1"
+        oninput="setVol(this.value)">
+    </div>
+    <button class="ctrl-btn" onclick="goFullscreen()">⛶</button>
+  </div>
+</div>
+
+<div class="info-bar" id="infoBar">
+  <span class="room-tag">Stream code: <span id="roomDisplay"></span></span>
+  <button class="btn btn-muted" onclick="window.location.href='index.html'">Leave</button>
+</div>
+
+<!-- Firebase + WebRTC -->
+<script src="firebase-config.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, push, onValue, onChildAdded, remove, get }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
+const ICE_SERVERS = { iceServers:[
+  { urls:"stun:stun.l.google.com:19302" },
+  { urls:"stun:stun1.l.google.com:19302" }
+]};
+
+const params = new URLSearchParams(location.search);
+let roomId = (params.get('room') || '').toUpperCase().trim();
+
+const stateCard    = document.getElementById('stateCard');
+const stateContent = document.getElementById('stateContent');
+const videoWrap    = document.getElementById('videoWrap');
+const infoBar      = document.getElementById('infoBar');
+const remoteVideo  = document.getElementById('remoteVideo');
+
+function setState(html) { stateContent.innerHTML = html; stateCard.style.display=''; }
+function hideState() { stateCard.style.display='none'; }
+function showVideo() {
+  videoWrap.style.display='block';
+  infoBar.style.display='flex';
+  document.getElementById('roomDisplay').textContent = roomId;
+}
+
+// No room code — show entry form
+if (!roomId) {
+  setState(`
+    <h1>Watch a Stream</h1>
+    <p class="sub">Enter the 6-character code from the streamer.</p>
+    <input class="code-input" id="codeInput" maxlength="6" placeholder="ABC123"
+      autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
+    <button class="btn btn-blue" onclick="enterCode()" style="width:100%">Watch Now</button>
+  `);
+} else {
+  connectToRoom(roomId);
+}
+
+window.enterCode = function() {
+  const v = document.getElementById('codeInput').value.trim().toUpperCase();
+  if (v.length < 4) { document.getElementById('codeInput').focus(); return; }
+  roomId = v;
+  connectToRoom(roomId);
+};
+
+async function connectToRoom(id) {
+  setState(`<div class="spinner"></div><h1>Connecting…</h1><p class="sub">Looking for stream <strong>${id}</strong></p>`);
+
+  // Check if room exists and is live
+  const metaSnap = await get(ref(db, `rooms/${id}/meta`));
+  if (!metaSnap.exists() || !metaSnap.val().live) {
+    setState(`<h1>Stream not found</h1><p class="sub">The code <strong>${id}</strong> doesn't match an active stream. Double-check it and try again.</p>
+      <button class="btn btn-blue" onclick="window.location.href='index.html'" style="margin-top:16px">← Back</button>`);
+    return;
+  }
+
+  const viewerId = Math.random().toString(36).slice(2,10);
+  const pc = new RTCPeerConnection(ICE_SERVERS);
+
+  pc.ontrack = e => {
+    if (e.streams && e.streams[0]) {
+      remoteVideo.srcObject = e.streams[0];
+      remoteVideo.play().catch(()=>{});
+      hideState();
+      showVideo();
+    }
+  };
+
+  pc.onicecandidate = e => {
+    if (e.candidate) {
+      push(ref(db, `rooms/${id}/ice_viewer/${viewerId}`), e.candidate.toJSON());
+    }
+  };
+
+  pc.onconnectionstatechange = () => {
+    if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+      setState(`<h1>Stream ended</h1><p class="sub">The streamer disconnected.</p>
+        <button class="btn btn-blue" onclick="window.location.href='index.html'" style="margin-top:16px">← Back</button>`);
+      videoWrap.style.display='none'; infoBar.style.display='none';
+    }
+  };
+
+  // Collect ICE from streamer
+  onChildAdded(ref(db, `rooms/${id}/ice_streamer/${viewerId}`), async snap => {
+    try { await pc.addIceCandidate(new RTCIceCandidate(snap.val())); } catch(e){}
+  });
+
+  // Create offer and send
+  const offer = await pc.createOffer({ offerToReceiveVideo:true, offerToReceiveAudio:true });
+  await pc.setLocalDescription(offer);
+  await set(ref(db, `rooms/${id}/joins/${viewerId}`), { offer: offer.sdp });
+
+  // Wait for answer
+  onValue(ref(db, `rooms/${id}/answers/${viewerId}`), async snap => {
+    if (!snap.exists()) return;
+    if (pc.signalingState !== 'have-local-offer') return;
+    try {
+      await pc.setRemoteDescription(new RTCSessionDescription({ type:'answer', sdp: snap.val().answer }));
+    } catch(e){}
+  });
+
+  // Listen for stream going offline
+  onValue(ref(db, `rooms/${id}/meta`), snap => {
+    if (snap.exists() && snap.val().live === false) {
+      setState(`<h1>Stream ended</h1><p class="sub">The streamer stopped the broadcast.</p>
+        <button class="btn btn-blue" onclick="window.location.href='index.html'" style="margin-top:16px">← Back</button>`);
+      videoWrap.style.display='none'; infoBar.style.display='none';
+    }
+  });
+
+  // Cleanup on page leave
+  window.addEventListener('beforeunload', () => {
+    remove(ref(db, `rooms/${id}/viewers/${viewerId}`));
+    pc.close();
+  });
+}
+
+// Controls
+window.toggleMute = function() {
+  const v = remoteVideo;
+  v.muted = !v.muted;
+  document.getElementById('muteBtn').textContent = v.muted ? '🔇' : '🔊';
+};
+window.setVol = function(val) {
+  remoteVideo.volume = val;
+  if (parseFloat(val) === 0) {
+    remoteVideo.muted = true;
+    document.getElementById('muteBtn').textContent = '🔇';
+  } else {
+    remoteVideo.muted = false;
+    document.getElementById('muteBtn').textContent = '🔊';
+  }
+};
+window.goFullscreen = function() {
+  const el = document.getElementById('videoWrap');
+  if (el.requestFullscreen) el.requestFullscreen();
+  else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen(); // Safari/iPad
+  else if (remoteVideo.webkitEnterFullscreen) remoteVideo.webkitEnterFullscreen(); // iOS fallback
+};
+</script>
+</body>
+</html>
