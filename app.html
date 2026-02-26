@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Pulse</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .app { display:grid;grid-template-columns:var(--sidebar-w) 1fr;height:100dvh;overflow:hidden; }
+
+    /* ── Sidebar ── */
+    .sidebar { display:flex;flex-direction:column;background:var(--bg-surface);border-right:1px solid var(--border);overflow:hidden; }
+    .sidebar-header { padding:14px 14px 10px;display:flex;align-items:center;gap:8px;flex-shrink:0; }
+    .sidebar-logo { font-family:'Syne',sans-serif;font-size:22px;font-weight:800;flex:1;letter-spacing:-0.5px; }
+    .sidebar-logo span { color:var(--accent); }
+
+    .sidebar-tabs { display:flex;padding:0 10px;gap:2px;flex-shrink:0;border-bottom:1px solid var(--border); }
+    .tab-btn { flex:1;padding:9px 4px;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;color:var(--text-muted);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:var(--transition);display:flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap; }
+    .tab-btn.active { color:var(--accent);border-bottom-color:var(--accent); }
+    .tab-btn:hover:not(.active) { color:var(--text-secondary); }
+    .badge { min-width:17px;height:17px;padding:0 4px;background:var(--accent);border-radius:var(--radius-pill);font-size:10px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center; }
+
+    .sidebar-search { padding:10px 10px 6px;flex-shrink:0; }
+    .search-wrap { position:relative; }
+    .search-wrap svg { position:absolute;left:11px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--text-muted);pointer-events:none; }
+    .search-wrap .input { padding-left:33px;padding-top:9px;padding-bottom:9px;font-size:13px;border-radius:var(--radius-pill); }
+
+    .sidebar-panel { display:none;flex:1;overflow:hidden;flex-direction:column; }
+    .sidebar-panel.active { display:flex; }
+    .list-scroll { flex:1;overflow-y:auto;padding:4px 0; }
+
+    .conv-item { display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;transition:var(--transition);border-radius:var(--radius-md);margin:1px 6px; }
+    .conv-item:hover { background:var(--bg-glass); }
+    .conv-item.active { background:var(--accent-soft); }
+    .conv-item.active .conv-name { color:var(--accent); }
+    .conv-meta { flex:1;min-width:0; }
+    .conv-name { font-weight:500;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+    .conv-preview { font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px; }
+    .conv-right { display:flex;flex-direction:column;align-items:flex-end;gap:4px; }
+    .conv-time { font-size:11px;color:var(--text-muted); }
+
+    .friend-item { display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;transition:var(--transition);border-radius:var(--radius-md);margin:1px 6px; }
+    .friend-item:hover { background:var(--bg-glass); }
+    .friend-name { font-size:14px;font-weight:500; }
+    .friend-tag { font-size:12px;color:var(--text-muted);margin-top:1px; }
+
+    .req-item { display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius-md);margin:1px 6px; }
+    .req-btns { display:flex;gap:6px;margin-left:auto; }
+    .btn-accept { padding:5px 12px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-pill);font-size:12px;font-weight:500;cursor:pointer;transition:var(--transition); }
+    .btn-accept:hover { background:#ff7d4d; }
+    .btn-reject { padding:5px 12px;background:var(--bg-overlay);color:var(--text-muted);border:none;border-radius:var(--radius-pill);font-size:12px;cursor:pointer;transition:var(--transition); }
+    .btn-reject:hover { color:#ff4757; }
+
+    .avatar-wrap { position:relative;flex-shrink:0; }
+    .avatar-wrap .online-dot { position:absolute;bottom:0;right:0; }
+    .empty-state { display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:36px 16px;color:var(--text-muted);font-size:13px;text-align:center; }
+    .empty-state svg { width:34px;height:34px;opacity:0.3; }
+
+    .sidebar-footer { padding:11px 12px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0; }
+    .my-name { font-size:13px;font-weight:500;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+    .my-tag { font-size:11px;color:var(--text-muted); }
+
+    /* ── Main ── */
+    .main { display:flex;flex-direction:column;background:var(--bg-base);overflow:hidden; }
+
+    .welcome-screen { flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--text-muted);position:relative;overflow:hidden; }
+    .welcome-screen.hidden { display:none; }
+    .welcome-bg { position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(255,107,53,0.05) 0%,transparent 60%); }
+    .welcome-icon { width:68px;height:68px;background:var(--accent-soft);border:1px solid var(--border-accent);border-radius:var(--radius-xl);display:flex;align-items:center;justify-content:center;z-index:1; }
+    .welcome-icon svg { width:30px;height:30px;color:var(--accent); }
+    .welcome-title { font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--text-primary);z-index:1; }
+    .welcome-sub { font-size:14px;z-index:1; }
+
+    .chat-view { flex:1;display:flex;flex-direction:column;overflow:hidden; }
+    .chat-view.hidden { display:none; }
+
+    .chat-topbar { display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg-surface);flex-shrink:0; }
+    .chat-topbar-name { font-family:'Syne',sans-serif;font-size:16px;font-weight:700;flex:1; }
+    .chat-topbar-status { font-size:12px;color:var(--text-muted); }
+    .topbar-actions { display:flex;gap:6px; }
+
+    /* Feature 7: Message search bar */
+    .msg-search-bar { padding:6px 12px;border-bottom:1px solid var(--border);background:var(--bg-surface);display:flex;align-items:center;gap:8px; }
+    .msg-search-bar input { flex:1;padding:7px 12px;background:var(--bg-glass);border:1px solid var(--border);border-radius:var(--radius-pill);color:var(--text-primary);font-family:'DM Sans',sans-serif;font-size:13px;outline:none; }
+    .msg-search-bar input:focus { border-color:var(--accent); }
+
+    .messages-area { flex:1;overflow-y:auto;padding:20px 20px 12px;display:flex;flex-direction:column;gap:4px;position:relative; }
+    .messages-area::-webkit-scrollbar { width:4px; }
+    .messages-area::-webkit-scrollbar-thumb { background:var(--bg-overlay);border-radius:4px; }
+
+    /* Feature 20: Scroll to bottom */
+    .scroll-to-bottom { position:absolute;bottom:12px;right:20px;width:36px;height:36px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px var(--accent-glow);opacity:0;pointer-events:none;transition:opacity 0.2s ease;z-index:10; }
+    .scroll-to-bottom.visible { opacity:1;pointer-events:all; }
+    .scroll-to-bottom svg { width:16px;height:16px;color:#fff; }
+
+    .msg-group { display:flex;flex-direction:column;gap:2px; }
+    .msg-group.mine { align-items:flex-end; }
+    .msg-group.theirs { align-items:flex-start; }
+    .msg-row { display:flex;flex-direction:column;align-items:flex-start;gap:4px;max-width:72%;position:relative; }
+    .msg-group.mine .msg-row { align-items:flex-end; }
+    .msg-bubble { padding:10px 14px;border-radius:var(--radius-lg);font-size:15px;line-height:1.5;word-break:break-word;max-width:100%; }
+    .msg-group.mine .msg-bubble { background:var(--accent);color:#fff;border-bottom-right-radius:4px; }
+    .msg-group.theirs .msg-bubble { background:var(--bg-raised);color:var(--text-primary);border-bottom-left-radius:4px;border:1px solid var(--border); }
+    .msg-meta { font-size:11px;color:var(--text-muted);margin-top:2px;padding:0 4px;display:flex;align-items:center;gap:4px; }
+    .msg-tick { color:var(--text-muted);font-size:11px; }
+    .msg-tick.read { color:#2ed573; }
+    .date-divider { display:flex;align-items:center;gap:10px;color:var(--text-muted);font-size:11px;margin:6px 0; }
+    .date-divider::before,.date-divider::after { content:'';flex:1;height:1px;background:var(--border); }
+
+    /* Feature 5: Edited tag */
+    .edited-tag { font-size:10px;opacity:0.6;margin-left:4px; }
+
+    /* Feature 3: Reply context */
+    .reply-context { padding:6px 10px;border-left:3px solid var(--accent);background:rgba(255,107,53,0.1);border-radius:4px var(--radius-sm) var(--radius-sm) 4px;font-size:12px;max-width:100%;margin-bottom:2px; }
+    .reply-name { font-weight:600;color:var(--accent);display:block;margin-bottom:2px; }
+    .reply-text { color:var(--text-secondary); white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:240px; }
+
+    /* Feature 2: Reactions */
+    .reaction-bar { display:flex;flex-wrap:wrap;gap:4px;margin-top:4px; }
+    .reaction-pill { padding:2px 8px;background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--radius-pill);font-size:13px;cursor:pointer;transition:var(--transition); }
+    .reaction-pill:hover { border-color:var(--accent);background:var(--accent-soft); }
+
+    /* Feature 2: Context menu */
+    .msg-ctx-menu { background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-deep);overflow:hidden;min-width:180px;z-index:5000; }
+    .ctx-reactions { display:flex;gap:4px;padding:8px 10px;border-bottom:1px solid var(--border); }
+    .ctx-reaction-btn { background:none;border:none;font-size:20px;cursor:pointer;padding:4px;border-radius:var(--radius-sm);transition:var(--transition); }
+    .ctx-reaction-btn:hover { background:var(--bg-overlay);transform:scale(1.2); }
+    .ctx-action { display:block;width:100%;padding:10px 14px;background:none;border:none;text-align:left;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text-primary);cursor:pointer;transition:var(--transition); }
+    .ctx-action:hover { background:var(--bg-glass-md); }
+    .ctx-action.danger { color:#ff4757; }
+    .ctx-action.danger:hover { background:rgba(255,71,87,0.1); }
+
+    /* Feature 7: Search highlights */
+    .msg-row.search-match .msg-bubble { box-shadow:0 0 0 2px var(--accent);border-radius:var(--radius-lg); }
+    .msg-row.search-no-match { opacity:0.3; }
+
+    /* Feature 1: Typing indicator */
+    .typing-group { display:none;margin:4px 0; }
+    .typing-group.visible { display:block; }
+
+    .msg-media-wrap { max-width:280px;border-radius:var(--radius-lg);overflow:hidden;cursor:zoom-in;transition:var(--transition); }
+    .msg-media { display:block;width:100%;max-height:320px;object-fit:cover;border-radius:var(--radius-lg); }
+
+    /* Reply bar */
+    .reply-bar { display:flex;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid var(--border);background:var(--bg-surface);font-size:13px; }
+    .reply-bar-label { color:var(--text-muted);font-size:12px; }
+    .reply-bar-name { color:var(--accent);font-weight:500; }
+    .reply-bar-text { flex:1;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+
+    .chat-input-bar { padding:10px 12px;border-top:1px solid var(--border);display:flex;align-items:flex-end;gap:8px;background:var(--bg-surface);flex-shrink:0;position:relative; }
+    .input-actions { display:flex;gap:4px;align-items:flex-end; }
+    .msg-textarea { flex:1;resize:none;max-height:140px;overflow-y:auto;padding:10px 14px;background:var(--bg-glass);border:1px solid var(--border);border-radius:var(--radius-pill);color:var(--text-primary);font-family:'DM Sans',sans-serif;font-size:15px;outline:none;transition:var(--transition);line-height:1.5;scrollbar-width:none; }
+    .msg-textarea::-webkit-scrollbar { display:none; }
+    .msg-textarea:focus { border-color:var(--accent);background:var(--bg-glass-md);box-shadow:0 0 0 3px var(--accent-soft); }
+    .msg-textarea::placeholder { color:var(--text-muted); }
+    .send-btn { width:42px;height:42px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:var(--transition);box-shadow:0 4px 16px var(--accent-glow); }
+    .send-btn:hover { transform:scale(1.08); }
+    .send-btn:active { transform:scale(0.93); }
+    .send-btn svg { width:17px;height:17px;color:#fff; }
+
+    .upload-indicator { position:absolute;top:-44px;left:0;right:0;display:flex;align-items:center;gap:8px;padding:8px 16px;background:var(--bg-raised);border-top:1px solid var(--border);font-size:13px;color:var(--text-secondary); }
+    .upload-spinner { width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite; }
+    @keyframes spin { to{transform:rotate(360deg)} }
+
+    /* GIF panel */
+    #gifPanel { position:absolute;bottom:calc(100% + 8px);left:12px;right:12px;background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--radius-xl);padding:12px;z-index:100;box-shadow:var(--shadow-deep);max-height:320px;display:flex;flex-direction:column;gap:8px; }
+    #gifPanel.hidden { display:none; }
+    #gifSearch { width:100%;padding:8px 14px;background:var(--bg-glass);border:1px solid var(--border);border-radius:var(--radius-pill);color:var(--text-primary);font-family:'DM Sans',sans-serif;font-size:13px;outline:none; }
+    #gifSearch:focus { border-color:var(--accent); }
+    #gifGrid { display:grid;grid-template-columns:repeat(4,1fr);gap:6px;overflow-y:auto;flex:1; }
+    .gif-thumb { width:100%;aspect-ratio:1;object-fit:cover;border-radius:var(--radius-sm);cursor:pointer;transition:var(--transition); }
+    .gif-thumb:hover { transform:scale(1.04); }
+    .gif-loading { grid-column:1/-1;text-align:center;padding:20px;color:var(--text-muted);font-size:13px; }
+    .gif-no-key { grid-column:1/-1;padding:16px;text-align:center;font-size:12px;color:var(--text-muted);line-height:1.7; }
+    .gif-no-key a { color:var(--accent); }
+
+    /* Emoji panel */
+    #emojiPanel { position:absolute;bottom:calc(100% + 8px);left:12px;background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--radius-xl);padding:12px;z-index:100;box-shadow:var(--shadow-deep);display:grid;grid-template-columns:repeat(8,1fr);gap:4px;max-width:320px; }
+    #emojiPanel.hidden { display:none; }
+    .emoji-btn { background:none;border:none;font-size:22px;cursor:pointer;padding:4px;border-radius:var(--radius-sm);transition:var(--transition);line-height:1; }
+    .emoji-btn:hover { background:var(--bg-overlay);transform:scale(1.2); }
+
+    /* Setup modal */
+    #setupModal .pfp-upload { display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:20px; }
+    .pfp-preview { width:88px;height:88px;border-radius:50%;background:var(--bg-overlay);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;transition:var(--transition); }
+    .pfp-preview:hover { border-color:var(--accent);background:var(--accent-soft); }
+    .pfp-hint { font-size:12px;color:var(--text-muted); }
+
+    /* Call modal */
+    .call-ring { position:absolute;inset:-8px;border-radius:50%;border:3px solid var(--accent);opacity:0.5;animation:callPulse 1.5s ease-in-out infinite; }
+    .call-ring-2 { position:absolute;inset:-16px;border-radius:50%;border:2px solid var(--accent);opacity:0.25;animation:callPulse 1.5s ease-in-out infinite .4s; }
+    @keyframes callPulse { 0%,100%{transform:scale(1);opacity:.5} 50%{transform:scale(1.08);opacity:.2} }
+    .end-call-btn { width:64px;height:64px;border-radius:50%;background:#ff4757;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;margin:0 auto;transition:var(--transition);box-shadow:0 8px 24px rgba(255,71,87,.4); }
+    .end-call-btn:hover { transform:scale(1.08); }
+    .end-call-btn svg { width:26px;height:26px;color:#fff; }
+
+    /* Friend result */
+    .friend-result { display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg-overlay);border-radius:var(--radius-md);margin-top:12px; }
+    .friend-result .info { flex:1; }
+    .friend-result .info strong { font-size:14px;display:block; }
+    .friend-result .info span { font-size:12px;color:var(--text-muted); }
+
+    /* Profile modal */
+    .profile-header { display:flex;flex-direction:column;align-items:center;gap:10px;padding-bottom:20px;border-bottom:1px solid var(--border);margin-bottom:20px; }
+    .profile-name { font-family:'Syne',sans-serif;font-size:20px;font-weight:700; }
+    .profile-tag { font-size:12px;color:var(--text-muted); }
+    .profile-bio { font-size:13px;color:var(--text-secondary);text-align:center;max-width:280px;line-height:1.5; }
+    .profile-actions { display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:4px; }
+
+    /* Settings */
+    #settingsModal .setting-row { display:flex;align-items:center;padding:13px 0;border-bottom:1px solid var(--border);gap:12px; }
+    #settingsModal .setting-row:last-child { border-bottom:none; }
+    .setting-label { flex:1;font-size:14px; }
+    .setting-label small { display:block;font-size:12px;color:var(--text-muted);margin-top:2px; }
+
+    /* Feature 8: Light theme */
+    [data-theme="light"] { --bg-base:#f0ece6;--bg-surface:#fff;--bg-raised:#f8f4f0;--bg-overlay:#e8e4df;--bg-glass:rgba(0,0,0,0.04);--bg-glass-md:rgba(0,0,0,0.07);--text-primary:#1a1a1a;--text-secondary:#5a5a6a;--text-muted:#9a9aaa;--border:rgba(0,0,0,0.1);--shadow-card:0 4px 16px rgba(0,0,0,0.12);--shadow-deep:0 16px 40px rgba(0,0,0,0.18); }
+
+    /* Feature 15: Media gallery */
+    .gallery-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:400px;overflow-y:auto; }
+    .gallery-thumb { width:100%;aspect-ratio:1;object-fit:cover;border-radius:var(--radius-sm);cursor:pointer;transition:var(--transition); }
+    .gallery-thumb:hover { transform:scale(1.04);border-radius:var(--radius-md); }
+
+    /* Feature 12: Shortcuts modal */
+    .shortcut-row { display:flex;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);gap:16px; }
+    .shortcut-row:last-child { border-bottom:none; }
+    .shortcut-key { padding:4px 10px;background:var(--bg-overlay);border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Mono',monospace;font-size:13px;font-weight:600;white-space:nowrap; }
+    .shortcut-desc { font-size:14px;color:var(--text-secondary); }
+
+    /* Loading overlay */
+    #loadingOverlay { position:fixed;inset:0;background:var(--bg-base);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px; }
+    #loadingOverlay.hidden { display:none; }
+    .boot-logo { font-family:'Syne',sans-serif;font-size:32px;font-weight:800; }
+    .boot-logo span { color:var(--accent); }
+    .boot-spinner { width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite; }
+
+    /* GIF button */
+    #gifBtn { font-size:11px;font-weight:800;font-family:'Syne',sans-serif;color:var(--accent);letter-spacing:0.5px; }
+    #gifBtn:hover { background:var(--accent-soft);color:var(--accent); }
+    #attachBtn:hover { background:var(--bg-glass-md);color:var(--accent); }
+    .messages-area::-webkit-scrollbar { width:4px; }
+    .messages-area::-webkit-scrollbar-thumb { background:var(--bg-overlay);border-radius:4px; }
+    .conv-item,.friend-item,.req-item { animation:itemSlide 0.25s ease both; }
+    @keyframes itemSlide { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
+    .online-dot:not(.offline) { animation:onlinePulse 2.5s ease-in-out infinite; }
+    @keyframes onlinePulse { 0%,100%{box-shadow:0 0 0 0 rgba(46,213,115,0.5)} 50%{box-shadow:0 0 0 4px rgba(46,213,115,0)} }
+    /* My reaction highlight */
+    .reaction-pill.my-reaction { border-color:var(--accent);background:var(--accent-soft); }
+    /* Audio message */
+    .msg-audio-wrap { padding:4px 0; }
+    audio::-webkit-media-controls-panel { background:var(--bg-raised); }
+
+    /* ── Profile Card Enhanced ── */
+    .profile-card-header {
+      position:relative;min-height:200px;display:flex;flex-direction:column;align-items:center;
+      justify-content:flex-end;padding:24px 24px 20px;overflow:hidden;
+    }
+    .profile-particles { position:absolute;inset:0;width:100%;height:100%;pointer-events:none; }
+    .profile-card-avatar-wrap { position:relative;z-index:2;margin-bottom:12px;filter:drop-shadow(0 8px 24px rgba(0,0,0,0.5)); }
+    .profile-avatar-large { width:90px;height:90px;font-size:28px;border-radius:50%;border:3px solid rgba(255,255,255,0.3);box-shadow:0 8px 32px rgba(0,0,0,0.4); }
+    .profile-card-status-dot { position:absolute;bottom:4px;right:4px;width:16px;height:16px;border-radius:50%;background:#2ed573;border:3px solid rgba(0,0,0,0.5);z-index:3; }
+    .profile-card-status-dot.offline { background:var(--text-muted); }
+    .profile-card-name { font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:#fff;z-index:2;text-shadow:0 2px 8px rgba(0,0,0,0.5); }
+    .profile-card-tag { font-size:13px;color:rgba(255,255,255,0.7);z-index:2;margin-top:2px; }
+    .profile-card-badge { z-index:2;margin-top:6px;font-size:12px;padding:3px 10px;border-radius:var(--radius-pill);background:rgba(255,255,255,0.15);color:#fff;backdrop-filter:blur(8px);display:none; }
+    .profile-bio-display { font-size:13px;color:var(--text-secondary);text-align:center;margin-bottom:16px;min-height:16px;line-height:1.5; }
+    .profile-stats { display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:20px;background:var(--bg-glass);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden; }
+    .profile-stat { flex:1;display:flex;flex-direction:column;align-items:center;padding:12px 8px;gap:2px; }
+    .profile-stat-val { font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--text-primary); }
+    .profile-stat-label { font-size:11px;color:var(--text-muted); }
+    .profile-stat-div { width:1px;height:40px;background:var(--border);flex-shrink:0; }
+    .profile-actions { display:flex;gap:8px;width:100%; }
+    .profile-actions .btn { flex:1;justify-content:center; }
+
+    /* Card gradient presets */
+    .profile-card-header[data-style="flame"] { background:linear-gradient(135deg,#1a0a00,#ff6b35,#ffbe0b); }
+    .profile-card-header[data-style="ocean"] { background:linear-gradient(135deg,#0a1a2e,#1e3a5f,#00b4d8,#90e0ef); }
+    .profile-card-header[data-style="galaxy"] { background:linear-gradient(135deg,#0d0221,#3d1a78,#6a0dad,#c77dff); }
+    .profile-card-header[data-style="aurora"] { background:linear-gradient(135deg,#003d2b,#00b09b,#96c93d,#f7971e); }
+    .profile-card-header[data-style="neon"] { background:linear-gradient(135deg,#0a0a1a,#00f0ff,#ff00ff,#0a0a1a); }
+    .profile-card-header[data-style="sakura"] { background:linear-gradient(135deg,#2d0a18,#ff758c,#ff7eb3,#ffd6e7); }
+    .profile-card-header[data-style="midnight"] { background:linear-gradient(135deg,#0a0a1f,#1a1a3e,#2d2d6e,#4040b0); }
+    .profile-card-header[data-style="gold"] { background:linear-gradient(135deg,#1a1000,#8b6914,#ffd700,#fffacd); }
+    .profile-card-header[data-style="emerald"]  { background:linear-gradient(135deg,#002d1a,#00704a,#2ecc71,#a8f0c6); }
+    .profile-card-header[data-style="crimson"]  { background:linear-gradient(135deg,#2d0000,#8b0000,#dc143c,#ff6b6b); }
+    .profile-card-header[data-style="ice"]      { background:linear-gradient(135deg,#001a2e,#005f8a,#00bcd4,#e0f7fa); }
+    .profile-card-header[data-style="sunset"]   { background:linear-gradient(135deg,#1a0a00,#e65100,#ff9800,#ffd54f); }
+
+    /* Card style picker */
+    .card-style-grid { display:grid;grid-template-columns:repeat(8,1fr);gap:6px; }
+    .card-style-btn { background:var(--bg-overlay);border:2px solid var(--border);border-radius:var(--radius-sm);padding:6px;font-size:16px;cursor:pointer;transition:var(--transition);line-height:1; }
+    .card-style-btn:hover { border-color:var(--accent);transform:scale(1.1); }
+    .card-style-btn.active { border-color:var(--accent);background:var(--accent-soft);transform:scale(1.1); }
+
+    /* Incoming call banner */
+    .incoming-call-banner {
+      position:fixed;top:16px;right:16px;z-index:9999;
+      background:var(--bg-raised);border:1px solid var(--border);
+      border-radius:var(--radius-lg);padding:14px 16px;
+      display:flex;align-items:center;gap:10px;
+      box-shadow:var(--shadow-deep),0 0 0 2px var(--accent-soft);
+      animation:slideInBanner 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+      max-width:340px;
+    }
+    @keyframes slideInBanner { from{transform:translateX(120%);opacity:0} to{transform:translateX(0);opacity:1} }
+  </style>
+</head>
+<body>
+
+  <!-- Loading overlay -->
+  <div id="loadingOverlay">
+    <div class="boot-logo">Pul<span>se</span></div>
+    <div class="boot-spinner"></div>
+  </div>
+
+  <div class="app" id="appRoot" style="display:none">
+    <!-- ═══════ SIDEBAR ═══════ -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">Pul<span>se</span></div>
+        <!-- Feature 8: Theme toggle -->
+        <button class="btn-icon" id="themeToggleBtn" title="Toggle theme">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </button>
+        <button class="btn-icon" id="addFriendBtn" title="Add Friend">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+            <line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="sidebar-tabs">
+        <button class="tab-btn active" data-tab="chats">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Chats
+        </button>
+        <button class="tab-btn" data-tab="friends">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          Friends
+        </button>
+        <button class="tab-btn" data-tab="requests">
+          Requests <span class="badge hidden" id="requestsBadge">0</span>
+        </button>
+      </div>
+
+      <div class="sidebar-search">
+        <div class="search-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input class="input" type="search" id="sidebarSearch" placeholder="Search…">
+        </div>
+      </div>
+
+      <div class="sidebar-panel active" id="panel-chats">
+        <div class="list-scroll" id="chatList"><div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>No chats yet</div></div>
+      </div>
+      <div class="sidebar-panel" id="panel-friends">
+        <div class="list-scroll" id="friendsList"><div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>No friends yet</div></div>
+      </div>
+      <div class="sidebar-panel" id="panel-requests">
+        <div class="list-scroll" id="requestsList"><div class="empty-state">No pending requests</div></div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="avatar-wrap">
+          <div class="avatar sm" id="myAvatar"></div>
+          <div class="online-dot" id="myOnlineDot" style="position:absolute;bottom:0;right:0"></div>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div class="my-name" id="myName">Loading…</div>
+          <div class="my-tag" id="myTag"></div>
+        </div>
+        <button class="btn-icon" id="openSettingsBtn" title="Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ═══════ MAIN ═══════ -->
+    <main class="main">
+      <div class="welcome-screen" id="welcomeScreen">
+        <div class="welcome-bg"></div>
+        <div class="welcome-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+        <div class="welcome-title">Select a conversation</div>
+        <div class="welcome-sub">Or start one by adding friends</div>
+      </div>
+
+      <div class="chat-view hidden" id="chatView" style="position:relative">
+        <div class="chat-topbar">
+          <div class="avatar-wrap">
+            <div class="avatar md" id="chatAvatar"></div>
+            <div class="online-dot offline" id="chatOnlineDot" style="position:absolute;bottom:0;right:0"></div>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div class="chat-topbar-name" id="chatName"></div>
+            <div class="chat-topbar-status" id="chatStatus">last seen recently</div>
+          </div>
+          <div class="topbar-actions">
+            <!-- Feature 7: Message search -->
+            <button class="btn-icon" id="msgSearchToggleBtn" title="Search messages">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </button>
+            <!-- Feature 15: Media gallery -->
+            <button class="btn-icon" id="mediaGalleryBtn" title="Media gallery">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </button>
+            <button class="btn-icon" id="callBtn" title="Voice call">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.44 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81a16 16 0 0 0 6.29 6.29l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            </button>
+            <button class="btn-icon" id="videoBtn" title="Video call">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+            </button>
+            <button class="btn-icon" id="viewProfileBtn" title="View profile">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Feature 7: Message search bar -->
+        <div class="msg-search-bar hidden" id="msgSearchBar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;color:var(--text-muted);flex-shrink:0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="msgSearchInput" placeholder="Search messages…">
+          <button class="btn-icon" onclick="document.getElementById('msgSearchBar').classList.add('hidden')" style="width:28px;height:28px">✕</button>
+        </div>
+
+        <div class="messages-area" id="messagesArea"></div>
+        <!-- Scroll to bottom button — lives OUTSIDE messagesArea so renderMessages() doesn't wipe it -->
+        <button class="scroll-to-bottom" id="scrollToBottomBtn" style="position:absolute;bottom:80px;right:20px;z-index:10">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+
+        <!-- Feature 3: Reply bar -->
+        <div class="reply-bar hidden" id="replyBar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;color:var(--accent);flex-shrink:0"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+          <span class="reply-bar-label">Reply to <span class="reply-bar-name" id="replyName"></span>:</span>
+          <span class="reply-bar-text" id="replyPreview"></span>
+          <button class="btn-icon" id="cancelReplyBtn" style="width:26px;height:26px;flex-shrink:0">✕</button>
+        </div>
+
+        <div class="chat-input-bar" id="chatInputBar">
+          <div id="gifPanel" class="hidden">
+            <input type="text" id="gifSearch" placeholder="Search GIFs…">
+            <div id="gifGrid"></div>
+          </div>
+          <div id="emojiPanel" class="hidden"></div>
+
+          <div class="input-actions">
+            <button class="btn-icon" id="voiceMemoBtn" title="Hold to record voice memo" style="color:var(--text-muted)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+            </button>
+            <button class="btn-icon" id="emojiBtn" title="Emoji">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+            </button>
+            <button class="btn-icon" id="gifBtn" style="font-size:11px;font-weight:800;font-family:'Syne',sans-serif;color:var(--accent)" title="GIF">GIF</button>
+            <button class="btn-icon" id="attachBtn" title="Attach image">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </button>
+          </div>
+          <input type="file" id="fileUploadInput" accept="image/*" style="display:none">
+          <!-- Emoji shortcode hint -->
+          <div id="emojiHint" class="hidden" style="position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--radius-md);padding:6px 14px;font-size:12px;color:var(--text-secondary);white-space:nowrap;box-shadow:var(--shadow-card);pointer-events:none;z-index:200"></div>
+          <textarea class="msg-textarea" id="msgInput" placeholder="Message… (try :fire:)" rows="1"></textarea>
+          <button class="send-btn" id="sendBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ═══════ MODALS ═══════ -->
+  <div class="modal-backdrop hidden" id="setupModal">
+    <div class="modal">
+      <div class="modal-title">Set up your profile</div>
+      <p class="modal-sub">This is how others see you on Pulse.</p>
+      <div class="pfp-upload">
+        <div class="pfp-preview" id="pfpPreview">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;color:var(--text-muted)"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </div>
+        <span class="pfp-hint">Tap to upload photo</span>
+        <input type="file" id="pfpFileInput" accept="image/*" style="display:none">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <input class="input" id="setupDisplayName" type="text" placeholder="Display name" maxlength="32">
+        <input class="input" id="setupUsername" type="text" placeholder="Username (letters, numbers, _)" maxlength="20">
+        <!-- Feature 19: Bio field -->
+        <textarea class="input" id="setupBio" placeholder="Bio (optional)" maxlength="160" rows="2" style="resize:none"></textarea>
+        <!-- Profile Card Style -->
+        <div style="margin-top:4px">
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">Profile Card Style</div>
+          <div class="card-style-grid" id="cardStyleGrid">
+            <button class="card-style-btn active" data-style="flame" title="Flame">🔥</button>
+            <button class="card-style-btn" data-style="ocean" title="Ocean">🌊</button>
+            <button class="card-style-btn" data-style="galaxy" title="Galaxy">🌌</button>
+            <button class="card-style-btn" data-style="aurora" title="Aurora">🌈</button>
+            <button class="card-style-btn" data-style="neon" title="Neon">⚡</button>
+            <button class="card-style-btn" data-style="sakura" title="Sakura">🌸</button>
+            <button class="card-style-btn" data-style="midnight" title="Midnight">🌙</button>
+            <button class="card-style-btn" data-style="gold" title="Gold">✨</button>
+            <button class="card-style-btn" data-style="emerald" title="Emerald">💚</button>
+            <button class="card-style-btn" data-style="crimson" title="Crimson">❤️</button>
+            <button class="card-style-btn" data-style="ice" title="Ice">🧊</button>
+            <button class="card-style-btn" data-style="sunset" title="Sunset">🌅</button>
+          </div>
+          <div style="margin-top:12px">
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">Bubble Shape</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <button class="card-style-btn bubble-shape-btn active" data-shape="rounded" title="Rounded" style="font-size:12px;padding:5px 10px">●◉</button>
+              <button class="card-style-btn bubble-shape-btn" data-shape="sharp" title="Sharp" style="font-size:12px;padding:5px 10px">▪◾</button>
+              <button class="card-style-btn bubble-shape-btn" data-shape="pill" title="Pill" style="font-size:12px;padding:5px 10px">⬭⬯</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" id="setupSaveBtn" style="width:100%;padding:13px">Save & Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop hidden" id="callModal">
+    <div class="modal" style="max-width:360px;text-align:center">
+      <!-- Video area for video calls -->
+      <div id="callVideoArea" style="display:none;position:relative;margin-bottom:12px;border-radius:var(--radius-lg);overflow:hidden;background:#000;aspect-ratio:4/3">
+        <video id="remoteVideo" autoplay playsinline style="width:100%;height:100%;object-fit:cover"></video>
+        <video id="localVideo" autoplay playsinline muted style="position:absolute;bottom:8px;right:8px;width:100px;height:75px;border-radius:var(--radius-sm);object-fit:cover;border:2px solid rgba(255,255,255,0.3)"></video>
+      </div>
+      <div style="position:relative;width:100px;height:100px;margin:0 auto 16px">
+        <div class="call-ring"></div><div class="call-ring-2"></div>
+        <div class="avatar xl" id="callAvatar" style="margin:0 auto;width:100px;height:100px;font-size:32px"></div>
+      </div>
+      <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;margin-bottom:6px" id="callName"></div>
+      <div style="font-size:14px;color:var(--text-secondary);margin-bottom:28px" id="callType">Calling…</div>
+      <div style="display:flex;gap:16px;justify-content:center;align-items:center">
+        <button class="btn-icon" id="muteBtn" title="Mute" style="width:52px;height:52px;border-radius:50%;background:var(--bg-overlay);border:1px solid var(--border)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        </button>
+        <button class="end-call-btn" id="endCallBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.42 19.42 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81M23 1 1 23"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop hidden" id="addFriendModal">
+    <div class="modal">
+      <div class="modal-title">Add a friend</div>
+      <p class="modal-sub">Search by username to connect.</p>
+      <div style="display:flex;gap:8px">
+        <input class="input" id="friendSearchInput" type="text" placeholder="Enter username…">
+        <button class="btn btn-primary" id="friendSearchBtn" style="flex-shrink:0">Search</button>
+      </div>
+      <div id="friendSearchResult"></div>
+      <div class="modal-actions"><button class="btn btn-ghost" id="closeFriendModal">Cancel</button></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop hidden" id="profileModal">
+    <div class="modal profile-modal-enhanced" style="padding:0;overflow:hidden;max-width:380px">
+      <!-- Profile Card with gradient background and particles -->
+      <div class="profile-card-header" id="profileCardHeader">
+        <canvas class="profile-particles" id="profileParticles"></canvas>
+        <div class="profile-card-avatar-wrap">
+          <div class="avatar profile-avatar-large" id="profileAvatar"></div>
+          <div class="profile-card-status-dot" id="profileStatusDot"></div>
+        </div>
+        <div class="profile-card-name" id="profileName"></div>
+        <div class="profile-card-tag" id="profileTag"></div>
+        <div class="profile-card-badge" id="profileCardBadge"></div>
+        <div class="profile-status-msg" id="profileStatusMsg" style="display:none"></div>
+      </div>
+      <div style="padding:20px 24px 24px">
+        <div class="profile-bio-display" id="profileBio"></div>
+        <div class="profile-stats" id="profileStats">
+          <div class="profile-stat"><span class="profile-stat-val" id="profileFriendCount">—</span><span class="profile-stat-label">Friends</span></div>
+          <div class="profile-stat-div"></div>
+          <div class="profile-stat"><span class="profile-stat-val" id="profileMemberSince">—</span><span class="profile-stat-label">Joined</span></div>
+        </div>
+        <div class="profile-actions" id="profileActions"></div>
+      </div>
+      <div class="modal-actions" style="padding:0 24px 20px"><button class="btn btn-ghost" id="closeProfileModal" style="width:100%">Close</button></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop hidden" id="settingsModal">
+    <div class="modal">
+      <div class="modal-title">Settings</div>
+      <p class="modal-sub">Manage your account.</p>
+      <div class="setting-row">
+        <div class="avatar md" id="settingsAvatar"></div>
+        <div class="setting-label"><span id="settingsName" style="font-weight:600"></span><small id="settingsTag"></small></div>
+        <button class="btn btn-ghost" id="editProfileBtn" style="font-size:13px;padding:7px 14px">Edit</button>
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">Notifications<small>Alerts for new messages</small></div>
+        <button class="btn btn-ghost" id="notifBtn" style="font-size:13px;padding:7px 14px">Enable</button>
+      </div>
+      <!-- Feature 9: Sound toggle -->
+      <div class="setting-row">
+        <div class="setting-label">Sound<small>Play sound on new messages</small></div>
+        <button class="btn btn-ghost" id="soundToggleBtn" style="font-size:13px;padding:7px 14px">On ✓</button>
+      </div>
+      <!-- Feature 8: Theme -->
+      <div class="setting-row">
+        <div class="setting-label">Theme<small>Switch between dark and light</small></div>
+        <button class="btn btn-ghost" id="themeToggleBtnSettings" style="font-size:13px;padding:7px 14px">Dark ✓</button>
+      </div>
+      <!-- Feature 12: Shortcuts -->
+      <div class="setting-row">
+        <div class="setting-label">Keyboard shortcuts<small>View all shortcuts</small></div>
+        <button class="btn btn-ghost" id="openShortcutsBtn" style="font-size:13px;padding:7px 14px">View</button>
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">Sign out<small>Sign out of Pulse</small></div>
+        <button class="btn btn-ghost" id="signOutBtn" style="font-size:13px;padding:7px 14px;color:#ff4757;border-color:rgba(255,71,87,.4)">Sign out</button>
+      </div>
+      <div class="modal-actions"><button class="btn btn-ghost" id="closeSettingsBtn">Close</button></div>
+    </div>
+  </div>
+
+  <!-- Feature 15: Media gallery modal -->
+  <div class="modal-backdrop hidden" id="mediaGalleryModal">
+    <div class="modal">
+      <div class="modal-title">Shared Media</div>
+      <p class="modal-sub">All photos and GIFs in this conversation.</p>
+      <div class="gallery-grid" id="mediaGalleryGrid"></div>
+      <div class="modal-actions"><button class="btn btn-ghost" id="closeMediaGallery">Close</button></div>
+    </div>
+  </div>
+
+  <!-- Feature 12: Keyboard shortcuts modal -->
+  <div class="modal-backdrop hidden" id="shortcutsModal">
+    <div class="modal">
+      <div class="modal-title">Keyboard Shortcuts</div>
+      <div class="shortcut-row"><span class="shortcut-key">Enter</span><span class="shortcut-desc">Send message</span></div>
+      <div class="shortcut-row"><span class="shortcut-key">Shift+Enter</span><span class="shortcut-desc">New line in message</span></div>
+      <div class="shortcut-row"><span class="shortcut-key">Ctrl/⌘+F</span><span class="shortcut-desc">Search messages</span></div>
+      <div class="shortcut-row"><span class="shortcut-key">Esc</span><span class="shortcut-desc">Cancel reply / edit / close modals</span></div>
+      <div class="shortcut-row"><span class="shortcut-key">?</span><span class="shortcut-desc">Open this shortcuts help</span></div>
+      <div class="shortcut-row"><span class="shortcut-key">Right-click</span><span class="shortcut-desc">React, reply, edit, delete messages</span></div>
+      <div class="modal-actions"><button class="btn btn-ghost" id="closeShortcutsBtn">Close</button></div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module" src="app.js"></script>
+  <!-- 6th Script: Advanced Features & Profile Enhancements -->
+  <script type="module" src="features.js"></script>
+  <!-- Media Script: Videos, GIFs, paste, drag-drop — no API needed -->
+  <script src="media.js"></script>
+</body>
+</html>
