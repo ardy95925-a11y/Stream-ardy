@@ -3,12 +3,12 @@
 //  Go to: Firebase Console → Project Settings → Your apps
 // ============================================================
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyCPabeR73HulqHs-wAq_ass1lUxkoEijAY",
+  authDomain: "chatin-e7d51.firebaseapp.com",
+  projectId: "chatin-e7d51",
+  storageBucket: "chatin-e7d51.firebasestorage.app",
+  messagingSenderId: "175440428513",
+  appId: "1:175440428513:web:c6b365aa7728f0ad5a66a0"
 };
 
 // Initialize Firebase
