@@ -230,30 +230,46 @@
 
     const btn = document.getElementById('googleSignInBtn');
 
-    // Check if already logged in
+    // Handle redirect result first (fires after Google sends user back)
+    auth.getRedirectResult().then(async result => {
+      if (result && result.user) {
+        // Successfully signed in via redirect
+        const snap = await db.collection('users').doc(result.user.uid).get();
+        if (snap.exists && snap.data().displayName) {
+          window.location.href = 'app.html';
+        } else {
+          window.location.href = 'app.html';
+        }
+      }
+    }).catch(e => {
+      if (e.code !== 'auth/no-auth-event') {
+        showToast('Sign-in failed: ' + e.message, 'error');
+      }
+    });
+
+    // Also check if already logged in (returning user)
     auth.onAuthStateChanged(async user => {
       if (user) {
-        // Check if profile set up
+        btn.innerHTML = '<div class="spinner"></div> Redirecting…';
+        btn.disabled = true;
         const snap = await db.collection('users').doc(user.uid).get();
         if (snap.exists && snap.data().displayName) {
           window.location.href = 'app.html';
         } else {
-          window.location.href = 'app.html#setup';
+          window.location.href = 'app.html';
         }
       }
     });
 
-    btn.addEventListener('click', async () => {
-      btn.innerHTML = '<div class="spinner"></div> Signing in…';
+    // Use redirect instead of popup — works on GitHub Pages, iPad Safari, all browsers
+    btn.addEventListener('click', () => {
+      btn.innerHTML = '<div class="spinner"></div> Redirecting to Google…';
       btn.disabled = true;
-      try {
-        await auth.signInWithPopup(googleProvider);
-        // onAuthStateChanged will redirect
-      } catch (e) {
+      auth.signInWithRedirect(googleProvider).catch(e => {
         showToast('Sign-in failed: ' + e.message, 'error');
         btn.innerHTML = `<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"> Continue with Google`;
         btn.disabled = false;
-      }
+      });
     });
   </script>
 </body>
