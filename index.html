@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pulse2</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen" class="screen active">
+  <div class="auth-bg">
+    <div class="auth-grid"></div>
+    <div class="pulse-ring r1"></div>
+    <div class="pulse-ring r2"></div>
+    <div class="pulse-ring r3"></div>
+  </div>
+  <div class="auth-container">
+    <div class="auth-logo">
+      <svg viewBox="0 0 40 40" fill="none" width="42" height="42">
+        <circle cx="20" cy="20" r="18" stroke="#FF6B1A" stroke-width="1.5" opacity="0.3"/>
+        <path d="M5 20 Q9 8 14 20 Q17 27 20 20 Q23 13 26 20 Q31 32 35 20" stroke="#FF6B1A" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="20" cy="20" r="2.5" fill="#FF6B1A"/>
+      </svg>
+      <span class="logo-text">Pulse<sup>2</sup></span>
+    </div>
+    <p class="auth-tagline">// connect · vibe · pulse</p>
+    <div class="auth-tabs">
+      <button class="auth-tab active" data-tab="login">Sign In</button>
+      <button class="auth-tab" data-tab="register">Create Account</button>
+    </div>
+    <form id="login-form" class="auth-form active">
+      <div class="input-group">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email"/>
+      </div>
+      <div class="input-group">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password"/>
+      </div>
+      <button type="submit" class="btn-primary">Sign In →</button>
+    </form>
+    <form id="register-form" class="auth-form">
+      <div class="input-group">
+        <label>Username</label>
+        <input type="text" id="reg-username" placeholder="coolname" maxlength="20"/>
+      </div>
+      <div class="input-group">
+        <label>Email</label>
+        <input type="email" id="reg-email" placeholder="you@example.com" autocomplete="email"/>
+      </div>
+      <div class="input-group">
+        <label>Password</label>
+        <input type="password" id="reg-password" placeholder="Min 6 characters" autocomplete="new-password"/>
+      </div>
+      <div class="input-group">
+        <label>Pick your color</label>
+        <div class="color-picker-row" id="reg-color-picker">
+          <div class="color-swatch active" data-color="#FF6B1A" style="background:#FF6B1A"></div>
+          <div class="color-swatch" data-color="#e74c3c" style="background:#e74c3c"></div>
+          <div class="color-swatch" data-color="#9b59b6" style="background:#9b59b6"></div>
+          <div class="color-swatch" data-color="#3498db" style="background:#3498db"></div>
+          <div class="color-swatch" data-color="#2ecc71" style="background:#2ecc71"></div>
+          <div class="color-swatch" data-color="#f39c12" style="background:#f39c12"></div>
+          <div class="color-swatch" data-color="#1abc9c" style="background:#1abc9c"></div>
+          <div class="color-swatch" data-color="#e91e63" style="background:#e91e63"></div>
+        </div>
+      </div>
+      <button type="submit" class="btn-primary">Create Account →</button>
+    </form>
+    <div id="auth-error" class="auth-error"></div>
+    <div id="auth-loader" class="auth-loader hidden">
+      <div class="spinner"></div><span>Connecting...</span>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app-screen" class="screen">
+
+  <!-- ICON RAIL -->
+  <nav id="server-rail">
+    <div class="rail-logo" title="Pulse2">
+      <svg viewBox="0 0 40 40" fill="none" width="22" height="22">
+        <path d="M5 20 Q9 8 14 20 Q17 27 20 20 Q23 13 26 20 Q31 32 35 20" stroke="#FF6B1A" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="20" cy="20" r="2.5" fill="#FF6B1A"/>
+      </svg>
+    </div>
+    <div class="rail-divider"></div>
+    <button class="rail-btn active" data-view="home" title="Home">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    </button>
+    <button class="rail-btn" data-view="search" title="Search (Ctrl+K)">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </button>
+    <button class="rail-btn" data-view="settings" title="Settings">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+    <div class="rail-spacer"></div>
+    <div class="rail-avatar-wrap" id="open-profile-btn" title="Edit Profile">
+      <div class="user-avatar" id="rail-avatar" style="width:38px;height:38px;font-size:16px;border-radius:12px;cursor:pointer"></div>
+    </div>
+    <button class="rail-btn rail-btn-danger" id="logout-btn" title="Logout">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    </button>
+  </nav>
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar">
+
+    <!-- HOME -->
+    <div id="sidebar-home" class="sidebar-view active">
+      <div class="sidebar-header">
+        <span class="sidebar-title">Pulse<sup>2</sup></span>
+        <button id="new-channel-btn" class="icon-btn" title="New Channel">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+      </div>
+      <div class="sidebar-scroll">
+        <div class="section-header">
+          <span class="section-label-text">CHANNELS</span>
+          <button class="section-add" id="new-channel-btn2">+</button>
+        </div>
+        <ul id="channel-list"></ul>
+        <div class="section-header" style="margin-top:14px">
+          <span class="section-label-text">DIRECT MESSAGES</span>
+          <button class="section-add" id="new-dm-btn">+</button>
+        </div>
+        <ul id="dm-list"></ul>
+      </div>
+      <div class="sidebar-footer">
+        <div class="user-pill" id="footer-profile-btn" title="Edit Profile">
+          <div class="user-avatar" id="sidebar-avatar" style="width:36px;height:36px;font-size:15px;flex-shrink:0"></div>
+          <div class="user-info">
+            <span class="user-name" id="sidebar-username"></span>
+            <span class="user-status-row">
+              <span class="status-dot-sm online" id="sidebar-status-dot"></span>
+              <span class="user-status-label" id="sidebar-status-label">Online</span>
+            </span>
+          </div>
+        </div>
+        <button id="sidebar-settings-btn" class="icon-btn" title="Settings">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- SEARCH -->
+    <div id="sidebar-search" class="sidebar-view">
+      <div class="sidebar-header">
+        <span class="sidebar-title">Search</span>
+      </div>
+      <div class="sidebar-scroll" style="padding:12px">
+        <div class="search-wrap">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="search-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="global-search-input" placeholder="Search messages..." autocomplete="off"/>
+        </div>
+        <div id="search-results" class="search-results"></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="sidebar-settings" class="sidebar-view">
+      <div class="sidebar-header">
+        <span class="sidebar-title">Settings</span>
+      </div>
+      <div class="sidebar-scroll settings-scroll">
+
+        <div class="settings-section">
+          <div class="settings-section-title">APPEARANCE</div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <span class="setting-name">Light Mode</span>
+              <span class="setting-desc">Switch to light theme</span>
+            </div>
+            <button class="toggle-btn" id="theme-toggle" data-on="false"><div class="toggle-track"><div class="toggle-thumb"></div></div></button>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <span class="setting-name">Compact Mode</span>
+              <span class="setting-desc">Tighter message spacing</span>
+            </div>
+            <button class="toggle-btn" id="compact-toggle" data-on="false"><div class="toggle-track"><div class="toggle-thumb"></div></div></button>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <span class="setting-name">Font Size</span>
+              <span class="setting-desc">Adjust message text</span>
+            </div>
+            <div class="font-size-ctrl">
+              <button id="font-smaller">−</button>
+              <span id="font-size-val">15px</span>
+              <button id="font-larger">+</button>
+            </div>
+          </div>
+          <div class="setting-row-col">
+            <span class="setting-name">Accent Color</span>
+            <div class="color-picker-row" id="accent-color-picker">
+              <div class="color-swatch active" data-color="#FF6B1A" style="background:#FF6B1A"></div>
+              <div class="color-swatch" data-color="#e74c3c" style="background:#e74c3c"></div>
+              <div class="color-swatch" data-color="#9b59b6" style="background:#9b59b6"></div>
+              <div class="color-swatch" data-color="#3498db" style="background:#3498db"></div>
+              <div class="color-swatch" data-color="#2ecc71" style="background:#2ecc71"></div>
+              <div class="color-swatch" data-color="#f39c12" style="background:#f39c12"></div>
+              <div class="color-swatch" data-color="#e91e63" style="background:#e91e63"></div>
+              <div class="color-swatch" data-color="#00bcd4" style="background:#00bcd4"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">NOTIFICATIONS & SOUND</div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <span class="setting-name">Sound Effects</span>
+              <span class="setting-desc">Pop on new messages</span>
+            </div>
+            <button class="toggle-btn on" id="sound-toggle" data-on="true"><div class="toggle-track"><div class="toggle-thumb"></div></div></button>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <span class="setting-name">Browser Notifications</span>
+              <span class="setting-desc">Notify when minimised</span>
+            </div>
+            <button class="toggle-btn" id="notif-toggle" data-on="false"><div class="toggle-track"><div class="toggle-thumb"></div></div></button>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">CHAT BEHAVIOUR</div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <span class="setting-name">Show Timestamps</span>
+              <span class="setting-desc">Time on every message</span>
+            </div>
+            <button class="toggle-btn on" id="timestamp-toggle" data-on="true"><div class="toggle-track"><div class="toggle-thumb"></div></div></button>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <span class="setting-name">Group Messages</span>
+              <span class="setting-desc">Combine consecutive messages</span>
+            </div>
+            <button class="toggle-btn on" id="grouping-toggle" data-on="true"><div class="toggle-track"><div class="toggle-thumb"></div></div></button>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <span class="setting-name">Typing Indicators</span>
+              <span class="setting-desc">Broadcast when you type</span>
+            </div>
+            <button class="toggle-btn on" id="typing-pref-toggle" data-on="true"><div class="toggle-track"><div class="toggle-thumb"></div></div></button>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <span class="setting-name">Enter to Send</span>
+              <span class="setting-desc">Shift+Enter for newline</span>
+            </div>
+            <button class="toggle-btn on" id="enter-send-toggle" data-on="true"><div class="toggle-track"><div class="toggle-thumb"></div></div></button>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">KEYBOARD SHORTCUTS</div>
+          <div class="shortcut-list">
+            <div class="shortcut-row"><kbd>Ctrl+K</kbd><span>Global search</span></div>
+            <div class="shortcut-row"><kbd>Alt+K</kbd><span>Focus message input</span></div>
+            <div class="shortcut-row"><kbd>Ctrl+E</kbd><span>Emoji picker</span></div>
+            <div class="shortcut-row"><kbd>↑</kbd><span>Edit your last message</span></div>
+            <div class="shortcut-row"><kbd>Esc</kbd><span>Cancel / close</span></div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">ACCOUNT</div>
+          <button id="settings-logout-btn" class="btn-danger">Sign Out</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CHAT AREA -->
+  <main id="chat-area">
+    <!-- EMPTY STATE -->
+    <div id="empty-state">
+      <div class="empty-pulse-wrap">
+        <div class="pulse-ring r1" style="position:absolute;width:80px;height:80px"></div>
+        <div class="pulse-ring r2" style="position:absolute;width:120px;height:120px;animation-delay:1.5s"></div>
+        <svg viewBox="0 0 40 40" fill="none" width="48" height="48" style="position:relative;z-index:1">
+          <path d="M5 20 Q9 8 14 20 Q17 27 20 20 Q23 13 26 20 Q31 32 35 20" stroke="#FF6B1A" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="20" cy="20" r="2.5" fill="#FF6B1A"/>
+        </svg>
+      </div>
+      <h2>Welcome to Pulse<sup>2</sup></h2>
+      <p>Select a channel or start a DM to begin.</p>
+      <div class="empty-hints">
+        <span><kbd>Ctrl+K</kbd> search</span>
+        <span><kbd>+</kbd> new channel</span>
+      </div>
+    </div>
+
+    <!-- CHAT VIEW -->
+    <div id="chat-view" class="hidden">
+      <!-- HEADER -->
+      <div id="chat-header">
+        <div class="chat-header-left">
+          <span id="chat-icon" class="chat-icon-hash">#</span>
+          <div class="chat-name-col">
+            <span id="chat-name" class="chat-title">general</span>
+            <span id="chat-topic" class="chat-subtitle"></span>
+          </div>
+        </div>
+        <div class="chat-header-right">
+          <span id="online-count" class="online-badge"></span>
+          <button id="pin-btn" class="icon-btn hdr-btn" title="Pinned Messages">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>
+          </button>
+          <button id="members-btn" class="icon-btn hdr-btn" title="Toggle Members">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- PINNED PANEL -->
+      <div id="pinned-panel" class="pinned-panel hidden">
+        <div class="pinned-panel-header">
+          <span>📌 Pinned Messages</span>
+          <button class="icon-btn" id="close-pinned-btn">✕</button>
+        </div>
+        <div id="pinned-list" class="pinned-list"></div>
+      </div>
+
+      <!-- MESSAGES -->
+      <div id="messages-container">
+        <div id="messages-list"></div>
+        <div id="typing-indicator" class="typing-indicator hidden">
+          <div class="typing-dots"><span></span><span></span><span></span></div>
+          <span id="typing-text"></span>
+        </div>
+      </div>
+
+      <!-- SCROLL TO BOTTOM -->
+      <button id="scroll-bottom-btn" class="scroll-bottom-btn hidden">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        <span id="scroll-unread-badge" class="scroll-badge"></span>
+      </button>
+
+      <!-- REPLY BANNER -->
+      <div id="reply-banner" class="reply-banner hidden">
+        <span style="color:var(--orange);font-size:14px">↩</span>
+        <span style="color:var(--text-400);font-size:13px">Replying to</span>
+        <strong id="reply-banner-author" style="font-size:13px;color:var(--text-100)"></strong>
+        <span id="reply-banner-preview" class="reply-preview-text"></span>
+        <button id="cancel-reply-btn" class="icon-btn" style="margin-left:auto">✕</button>
+      </div>
+
+      <!-- INPUT AREA -->
+      <div id="input-area">
+        <div class="input-wrapper">
+          <button id="emoji-btn" class="input-icon-btn" title="Emoji (Ctrl+E)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+          </button>
+          <textarea id="message-input" placeholder="Message..." rows="1"></textarea>
+          <span id="char-count" class="char-count"></span>
+          <button id="send-btn" class="send-btn">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+        <div class="input-hints">
+          <span><kbd>Enter</kbd> send · <kbd>Shift+Enter</kbd> newline · <kbd>↑</kbd> edit last</span>
+          <span class="markdown-hint">**bold** *italic* `code` ~~strike~~</span>
+        </div>
+
+        <!-- EMOJI PICKER -->
+        <div id="emoji-picker" class="emoji-picker hidden">
+          <div class="emoji-picker-header">
+            <div class="emoji-cats" id="emoji-cats">
+              <button class="emoji-cat active" data-cat="recent" title="Recent">🕐</button>
+              <button class="emoji-cat" data-cat="smileys" title="Smileys">😀</button>
+              <button class="emoji-cat" data-cat="people" title="People">👋</button>
+              <button class="emoji-cat" data-cat="objects" title="Objects">🔥</button>
+              <button class="emoji-cat" data-cat="symbols" title="Symbols">❤️</button>
+            </div>
+            <input type="text" id="emoji-search-input" class="emoji-search" placeholder="Search emoji..."/>
+          </div>
+          <div id="emoji-grid" class="emoji-grid"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- MEMBERS PANEL -->
+  <div id="members-panel" class="members-panel hidden">
+    <div class="members-panel-header">
+      <span>Members</span>
+      <button id="close-members-btn" class="icon-btn">✕</button>
+    </div>
+    <div style="padding:8px 12px">
+      <input type="text" id="member-filter" placeholder="Filter members..." class="member-filter-input"/>
+    </div>
+    <div id="members-scroll">
+      <div class="member-group-label">ONLINE — <span id="cnt-online">0</span></div>
+      <ul id="online-members"></ul>
+      <div class="member-group-label" style="margin-top:12px">OFFLINE — <span id="cnt-offline">0</span></div>
+      <ul id="offline-members"></ul>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div id="modal-overlay" class="modal-overlay hidden">
+
+  <div id="new-channel-modal" class="modal hidden">
+    <div class="modal-header">
+      <h3>Create Channel</h3>
+      <button class="modal-close" data-modal="new-channel-modal">✕</button>
+    </div>
+    <div class="input-group">
+      <label>Channel Name</label>
+      <input type="text" id="channel-name-input" placeholder="e.g. gaming, lounge" maxlength="32"/>
+    </div>
+    <div class="input-group">
+      <label>Topic <span class="label-opt">(optional)</span></label>
+      <input type="text" id="channel-topic-input" placeholder="What's this channel about?" maxlength="100"/>
+    </div>
+    <div class="input-group">
+      <label>Type</label>
+      <div class="channel-type-group">
+        <label class="channel-type-card selected">
+          <input type="radio" name="channel-type" value="public" checked hidden/>
+          <span class="ct-icon">#</span>
+          <div><strong>Public</strong><small>Everyone can join</small></div>
+        </label>
+        <label class="channel-type-card">
+          <input type="radio" name="channel-type" value="private" hidden/>
+          <span class="ct-icon">🔒</span>
+          <div><strong>Private</strong><small>Invite only</small></div>
+        </label>
+      </div>
+    </div>
+    <button id="create-channel-btn" class="btn-primary">Create Channel</button>
+  </div>
+
+  <div id="dm-modal" class="modal hidden">
+    <div class="modal-header">
+      <h3>New Direct Message</h3>
+      <button class="modal-close" data-modal="dm-modal">✕</button>
+    </div>
+    <div class="input-group">
+      <label>Find a user</label>
+      <input type="text" id="dm-search-input" placeholder="Search by username..." autocomplete="off"/>
+    </div>
+    <ul id="dm-search-results"></ul>
+  </div>
+
+  <div id="profile-modal" class="modal hidden">
+    <div class="modal-header">
+      <h3>Edit Profile</h3>
+      <button class="modal-close" data-modal="profile-modal">✕</button>
+    </div>
+    <div class="profile-preview-row">
+      <div class="user-avatar" id="profile-avatar-preview" style="width:72px;height:72px;font-size:30px;border-radius:18px;flex-shrink:0"></div>
+      <div>
+        <div id="profile-name-preview" style="font-family:var(--font-display);font-weight:700;font-size:20px;margin-bottom:3px"></div>
+        <div id="profile-user-preview" style="font-size:12px;color:var(--text-600);font-family:var(--font-mono)"></div>
+      </div>
+    </div>
+    <div class="input-group">
+      <label>Display Name</label>
+      <input type="text" id="profile-name-input" placeholder="Your display name" maxlength="30"/>
+    </div>
+    <div class="input-group">
+      <label>Bio <span class="label-opt">(max 150 chars)</span></label>
+      <textarea id="profile-bio-input" placeholder="Tell people about yourself..." maxlength="150" rows="3"></textarea>
+    </div>
+    <div class="input-group">
+      <label>Status</label>
+      <div class="status-row" id="status-picker">
+        <button class="status-chip active" data-status="online">🟢 Online</button>
+        <button class="status-chip" data-status="idle">🌙 Idle</button>
+        <button class="status-chip" data-status="dnd">🔴 Busy</button>
+        <button class="status-chip" data-status="invisible">⚫ Invisible</button>
+      </div>
+    </div>
+    <div class="input-group">
+      <label>Avatar Color</label>
+      <div class="color-picker-row" id="profile-color-picker">
+        <div class="color-swatch active" data-color="#FF6B1A" style="background:#FF6B1A"></div>
+        <div class="color-swatch" data-color="#e74c3c" style="background:#e74c3c"></div>
+        <div class="color-swatch" data-color="#9b59b6" style="background:#9b59b6"></div>
+        <div class="color-swatch" data-color="#3498db" style="background:#3498db"></div>
+        <div class="color-swatch" data-color="#2ecc71" style="background:#2ecc71"></div>
+        <div class="color-swatch" data-color="#f39c12" style="background:#f39c12"></div>
+        <div class="color-swatch" data-color="#1abc9c" style="background:#1abc9c"></div>
+        <div class="color-swatch" data-color="#e91e63" style="background:#e91e63"></div>
+      </div>
+    </div>
+    <button id="save-profile-btn" class="btn-primary">Save Changes</button>
+  </div>
+
+  <div id="user-popup-modal" class="modal user-popup hidden">
+    <button class="modal-close" data-modal="user-popup-modal" style="position:absolute;top:10px;right:10px;z-index:5">✕</button>
+    <div class="user-popup-header" id="popup-header-color"></div>
+    <div class="user-popup-body">
+      <div class="user-avatar" id="popup-avatar" style="width:64px;height:64px;font-size:26px;border-radius:16px;border:4px solid var(--bg-800);margin-top:-32px;position:relative;z-index:2"></div>
+      <div id="popup-display-name" style="font-family:var(--font-display);font-weight:700;font-size:18px;margin-top:8px"></div>
+      <div id="popup-username" style="font-size:12px;color:var(--text-600);font-family:var(--font-mono)"></div>
+      <div id="popup-status-line" style="font-size:13px;margin-top:4px"></div>
+      <div id="popup-bio" class="popup-bio"></div>
+      <button id="popup-dm-btn" class="btn-primary" style="margin-top:14px;width:100%">💬 Send Message</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONTEXT MENU -->
+<div id="ctx-menu" class="ctx-menu hidden">
+  <button class="ctx-item" id="ctx-reply">↩ Reply</button>
+  <button class="ctx-item" id="ctx-react">😊 Add Reaction</button>
+  <button class="ctx-item" id="ctx-pin">📌 Pin Message</button>
+  <button class="ctx-item" id="ctx-copy">📋 Copy Text</button>
+  <div class="ctx-sep"></div>
+  <button class="ctx-item ctx-edit-item" id="ctx-edit">✏️ Edit Message</button>
+  <button class="ctx-item ctx-danger" id="ctx-delete">🗑 Delete Message</button>
+</div>
+
+<!-- REACTION POPUP -->
+<div id="reaction-popup" class="reaction-popup hidden">
+  <div id="reaction-popup-grid"></div>
+</div>
+
+<!-- TOAST -->
+<div id="toast-container"></div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
