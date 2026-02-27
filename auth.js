@@ -1,4 +1,4 @@
-// auth.js - Pulse2 Authentication
+
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
