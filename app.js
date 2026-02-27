@@ -55,7 +55,7 @@ try {
   console.warn('Could not set persistence:', e.message);
 }
 
-const GIPHY_KEY = 'dc6zaTOxFJmzC';
+const GIPHY_KEY = 'X9TJ3cb1am8tDiYXGHpnHzFPWvkxSAwz';
 
 // ── State ─────────────────────────────────────────────
 let currentUser       = null;
