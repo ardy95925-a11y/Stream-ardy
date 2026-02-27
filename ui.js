@@ -1,4 +1,3 @@
-// ui.js - Pulse2 UI Utilities
 
 // ============ TOAST ============
 
