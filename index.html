@@ -1,0 +1,1671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#060609">
+<title>MARROW — Bone Animator</title>
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg0:#060609; --bg1:#0c0c12; --bg2:#121219; --bg3:#191922; --bg4:#21212e; --bg5:#2a2a3a;
+  --accent:#e8572a; --accent-dim:rgba(232,87,42,0.18); --accent2:#ffa040;
+  --teal:#00d4aa; --teal-dim:rgba(0,212,170,0.18);
+  --bone:#ff6b2e; --joint:#f5c518;
+  --sel:#4ae8d8; --sel-dim:rgba(74,232,216,0.2);
+  --text:#c8c8dc; --text2:#7878a0; --text3:#3a3a58;
+  --panel-w:220px; --tool-w:52px; --tl-h:220px; --hdr-h:48px;
+  --border:1px solid var(--bg5);
+  --r:6px;
+  --font-ui:'DM Sans', sans-serif;
+  --font-mono:'IBM Plex Mono', monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg0);color:var(--text);font-family:var(--font-ui)}
+button{font-family:var(--font-ui)}
+
+/* ── LAYOUT ──────────────────────────────────── */
+#app{display:grid;grid-template-rows:var(--hdr-h) 1fr var(--tl-h);grid-template-columns:var(--tool-w) 1fr var(--panel-w);width:100vw;height:100vh}
+#header{grid-column:1/-1;grid-row:1;display:flex;align-items:center;gap:6px;padding:0 10px;background:var(--bg1);border-bottom:var(--border);z-index:10;user-select:none}
+#toolbar{grid-column:1;grid-row:2;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0;background:var(--bg1);border-right:var(--border);overflow-y:auto}
+#canvas-wrap{grid-column:2;grid-row:2;position:relative;overflow:hidden;background:var(--bg0)}
+#right-panel{grid-column:3;grid-row:2;background:var(--bg1);border-left:var(--border);overflow-y:auto;display:flex;flex-direction:column}
+#timeline-section{grid-column:1/-1;grid-row:3;background:var(--bg1);border-top:var(--border);display:flex;flex-direction:column;overflow:hidden;user-select:none}
+
+/* ── HEADER ──────────────────────────────────── */
+.logo{font-family:var(--font-mono);font-weight:600;font-size:15px;letter-spacing:0.15em;color:var(--accent);white-space:nowrap;margin-right:6px}
+.logo span{color:var(--text2)}
+.mode-group{display:flex;gap:2px;background:var(--bg2);border:var(--border);border-radius:8px;padding:3px}
+.mode-btn{padding:5px 12px;border-radius:5px;font-family:var(--font-ui);font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;border:none;background:transparent;color:var(--text2);cursor:pointer;transition:all .12s;white-space:nowrap;touch-action:manipulation}
+.mode-btn:hover{color:var(--text);background:var(--bg4)}
+.mode-btn.active{background:var(--accent);color:#fff}
+.hdr-sep{width:1px;height:24px;background:var(--bg5);margin:0 4px}
+.hdr-btn{width:32px;height:32px;border-radius:var(--r);background:var(--bg2);border:var(--border);color:var(--text2);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .12s;touch-action:manipulation;flex-shrink:0}
+.hdr-btn:hover{color:var(--text);background:var(--bg4)}
+.hdr-btn.danger:hover{background:rgba(255,60,60,.15);color:#ff6060;border-color:#5a1515}
+.hdr-btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.hdr-spacer{flex:1}
+#frame-readout{font-family:var(--font-mono);font-size:12px;color:var(--accent2);padding:4px 9px;background:var(--bg2);border-radius:var(--r);border:var(--border);min-width:88px;text-align:center;letter-spacing:0.04em}
+.easing-sel{font-family:var(--font-mono);font-size:10px;background:var(--bg2);border:var(--border);color:var(--text2);border-radius:var(--r);padding:4px 7px;cursor:pointer;appearance:none}
+.easing-sel:focus{outline:none;border-color:var(--accent)}
+
+/* ── TOOLBAR ──────────────────────────────────── */
+.tb-group{display:flex;flex-direction:column;align-items:center;gap:2px;width:100%}
+.tb-sep{width:28px;height:1px;background:var(--bg5);margin:5px auto}
+.tool-btn{width:40px;height:40px;border-radius:var(--r);background:transparent;border:1px solid transparent;color:var(--text3);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:all .1s;touch-action:manipulation;gap:2px;flex-shrink:0}
+.tool-btn:hover{background:var(--bg4);color:var(--text2)}
+.tool-btn.active{background:var(--bg4);border-color:var(--accent);color:var(--accent)}
+.tool-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.tool-btn.active svg{stroke:var(--accent)}
+.tool-lbl{font-family:var(--font-mono);font-size:7px;font-weight:600;letter-spacing:0.1em;color:inherit;text-transform:uppercase;line-height:1}
+
+/* ── CANVAS ──────────────────────────────────── */
+#main-canvas,#cursor-canvas{position:absolute;top:0;left:0;width:100%;height:100%;touch-action:none}
+#cursor-canvas{pointer-events:none}
+.canvas-hint{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:rgba(12,12,18,0.92);border:var(--border);padding:6px 14px;border-radius:20px;font-size:11px;color:var(--text2);white-space:nowrap;pointer-events:none;backdrop-filter:blur(6px);letter-spacing:0.03em}
+
+/* ── RIGHT PANEL ──────────────────────────────── */
+.panel-sec{border-bottom:var(--border);padding:10px}
+.panel-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.panel-title{font-size:9px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--text3)}
+.panel-action{font-size:9px;color:var(--teal);cursor:pointer;letter-spacing:0.06em;font-weight:600;background:none;border:none;font-family:var(--font-ui);text-transform:uppercase}
+.panel-action:hover{color:var(--accent)}
+
+/* Layers */
+.layer-item{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:var(--r);cursor:pointer;background:var(--bg2);border:1px solid transparent;margin-bottom:3px;transition:all .1s}
+.layer-item.active{border-color:var(--accent);background:var(--bg3)}
+.layer-item:hover:not(.active){background:var(--bg3)}
+.layer-vis-btn{width:20px;height:20px;border-radius:4px;font-size:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--bg4);border:none;color:var(--text2);cursor:pointer}
+.layer-name{flex:1;font-size:12px;color:var(--text)}
+.layer-del{font-size:11px;color:var(--text3);cursor:pointer;background:none;border:none;padding:2px;border-radius:3px}
+.layer-del:hover{color:#ff6060}
+.layer-add-btn{width:100%;padding:7px;border-radius:var(--r);background:transparent;border:1px dashed var(--bg5);color:var(--text3);cursor:pointer;font-size:11px;font-weight:600;transition:all .12s;font-family:var(--font-ui);letter-spacing:0.04em}
+.layer-add-btn:hover{border-color:var(--teal);color:var(--teal)}
+
+/* Properties */
+.prop-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.prop-lbl{font-size:10px;color:var(--text2);width:44px;flex-shrink:0;font-family:var(--font-mono)}
+input[type=color]{width:28px;height:28px;border:none;border-radius:5px;background:none;cursor:pointer;padding:0;flex-shrink:0}
+input[type=range]{flex:1;accent-color:var(--accent);height:3px;cursor:pointer}
+.prop-val{font-family:var(--font-mono);font-size:10px;color:var(--accent2);width:32px;text-align:right;flex-shrink:0}
+
+/* Bones list */
+.bone-tree{display:flex;flex-direction:column;gap:2px;max-height:160px;overflow-y:auto}
+.bone-row{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:var(--r);cursor:pointer;background:var(--bg2);border:1px solid transparent;transition:all .1s}
+.bone-row.active{border-color:var(--bone);background:var(--bg3)}
+.bone-row:hover:not(.active){background:var(--bg3)}
+.bone-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.bone-dot.j{background:var(--joint)}
+.bone-dot.b{background:var(--bone)}
+.bone-row-name{flex:1;font-size:11px;color:var(--text);outline:none;background:transparent;border:none;font-family:var(--font-ui);cursor:pointer}
+.bone-row-name:focus{color:var(--sel)}
+.bone-indent{width:8px;flex-shrink:0}
+
+/* Small buttons */
+.btn{padding:5px 11px;border-radius:var(--r);font-size:10px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;font-family:var(--font-ui);transition:all .12s;border:1px solid var(--bg5);background:var(--bg3);color:var(--text2);white-space:nowrap}
+.btn:hover{border-color:var(--text3);color:var(--text)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:#ff6a3a}
+.btn.teal{background:var(--teal-dim);border-color:var(--teal);color:var(--teal)}
+.btn.teal:hover{background:rgba(0,212,170,0.3)}
+.btn.danger{border-color:#4a1515;color:#ff7070}
+.btn.danger:hover{background:rgba(255,60,60,.12)}
+.btn-row{display:flex;gap:5px;flex-wrap:wrap}
+
+/* Toggle */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0}
+.toggle-lbl{font-size:11px;color:var(--text2)}
+.toggle{width:34px;height:18px;border-radius:9px;background:var(--bg5);border:none;cursor:pointer;position:relative;transition:background .15s;flex-shrink:0}
+.toggle.on{background:var(--accent)}
+.toggle::after{content:'';position:absolute;width:12px;height:12px;border-radius:50%;background:#fff;top:3px;left:3px;transition:transform .15s}
+.toggle.on::after{transform:translateX(16px)}
+
+/* Onion depth */
+.depth-btns{display:flex;gap:3px}
+.depth-btn{width:26px;height:26px;border-radius:4px;background:var(--bg3);border:1px solid var(--bg5);color:var(--text2);font-family:var(--font-mono);font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .1s}
+.depth-btn.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent2)}
+
+/* ── TIMELINE ──────────────────────────────────── */
+.tl-ctrl{display:flex;align-items:center;gap:4px;padding:5px 10px 4px;border-bottom:var(--border);flex-shrink:0}
+.tl-btn{width:28px;height:28px;border-radius:var(--r);background:var(--bg2);border:var(--border);color:var(--text2);cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .1s;touch-action:manipulation}
+.tl-btn:hover{color:var(--text);background:var(--bg4)}
+.tl-btn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.play-btn{width:32px;height:32px;border-radius:50%;background:var(--accent);border:none;color:#fff;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 14px rgba(232,87,42,.35);transition:all .12s;flex-shrink:0}
+.play-btn:hover{transform:scale(1.08)}
+.play-btn svg{width:13px;height:13px;stroke:#fff;fill:#fff;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.tl-spacer{flex:1}
+.tl-fps{font-family:var(--font-mono);font-size:10px;color:var(--text2);padding:3px 7px;background:var(--bg2);border:var(--border);border-radius:var(--r);cursor:pointer}
+.tl-fps:hover{color:var(--text)}
+.kf-btn{padding:5px 10px;border-radius:var(--r);font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;background:var(--bg3);border:1px solid var(--accent2);color:var(--accent2);cursor:pointer;font-family:var(--font-ui);transition:all .12s}
+.kf-btn:hover{background:rgba(255,160,64,.15)}
+.tl-frames-lbl{font-family:var(--font-mono);font-size:10px;color:var(--text3);min-width:60px}
+
+/* Timeline scroll area */
+#tl-scroll{flex:1;overflow:hidden;position:relative;display:flex}
+.tl-labels{width:110px;flex-shrink:0;border-right:var(--border);overflow:hidden;display:flex;flex-direction:column}
+.tl-lbl-row{height:24px;display:flex;align-items:center;padding:0 8px;font-size:10px;color:var(--text2);flex-shrink:0;border-bottom:1px solid var(--bg3);font-family:var(--font-mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl-lbl-row.hdr{height:20px;font-size:8px;color:var(--text3);font-weight:600;letter-spacing:0.1em}
+.tl-lbl-row.root-track{color:var(--teal)}
+.tl-canvas-wrap{flex:1;overflow-x:auto;overflow-y:hidden;position:relative}
+#tl-canvas{display:block;touch-action:none;cursor:crosshair}
+
+/* ── TOAST ──────────────────────────────────── */
+#toast{position:fixed;bottom:240px;left:50%;transform:translateX(-50%);background:var(--bg3);border:var(--border);color:var(--text);padding:8px 18px;border-radius:20px;font-size:12px;pointer-events:none;transition:opacity .25s;opacity:0;z-index:50;font-family:var(--font-mono);letter-spacing:0.04em}
+#toast.show{opacity:1}
+
+/* ── CONTEXT MENU ──────────────────────────── */
+#ctx-menu{position:fixed;background:var(--bg2);border:var(--border);border-radius:8px;min-width:140px;z-index:100;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.6);display:none}
+.ctx-item{padding:8px 14px;font-size:12px;color:var(--text);cursor:pointer;display:flex;align-items:center;gap:8px}
+.ctx-item:hover{background:var(--bg4)}
+.ctx-item.danger{color:#ff7070}
+.ctx-item svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;flex-shrink:0}
+
+/* ── SCROLLBAR ──────────────────────────────── */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:2px}
+
+/* ── SPLASH ─────────────────────────────────── */
+#splash{position:fixed;inset:0;background:var(--bg0);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;gap:20px}
+#splash .s-logo{font-family:var(--font-mono);font-size:52px;font-weight:600;letter-spacing:0.12em;color:var(--accent)}
+#splash .s-sub{font-size:13px;color:var(--text2);letter-spacing:0.1em;text-transform:uppercase;font-weight:500}
+#splash .s-desc{font-size:13px;color:var(--text3);text-align:center;max-width:380px;line-height:1.75}
+#splash .s-keys{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+#splash .s-key{font-family:var(--font-mono);font-size:10px;color:var(--text2);background:var(--bg3);border:var(--border);border-radius:4px;padding:4px 8px}
+#splash-btn{padding:13px 36px;border-radius:30px;background:var(--accent);border:none;color:#fff;font-family:var(--font-ui);font-size:14px;font-weight:600;letter-spacing:0.06em;cursor:pointer;box-shadow:0 0 24px rgba(232,87,42,.4);transition:all .2s;margin-top:4px}
+#splash-btn:hover{transform:scale(1.04);box-shadow:0 0 32px rgba(232,87,42,.55)}
+.s-divider{width:40px;height:1px;background:var(--bg5)}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <div class="s-logo">MARROW</div>
+  <div class="s-sub">2D Bone Animation Studio</div>
+  <div class="s-divider"></div>
+  <div class="s-keys">
+    <span class="s-key">Space — Play/Pause</span>
+    <span class="s-key">← → — Frame</span>
+    <span class="s-key">⌘Z — Undo</span>
+    <span class="s-key">K — Keyframe</span>
+    <span class="s-key">C/V — Copy/Paste Pose</span>
+    <span class="s-key">1-4 — Modes</span>
+  </div>
+  <button id="splash-btn" onclick="closeSplash()">Open Studio →</button>
+</div>
+
+<div id="app">
+
+  <!-- HEADER -->
+  <header id="header">
+    <span class="logo">MRW<span>.</span></span>
+    <div class="mode-group">
+      <button class="mode-btn active" data-mode="draw" onclick="setMode('draw')">Draw</button>
+      <button class="mode-btn" data-mode="rig" onclick="setMode('rig')">Rig</button>
+      <button class="mode-btn" data-mode="pose" onclick="setMode('pose')">Pose</button>
+      <button class="mode-btn" data-mode="animate" onclick="setMode('animate')">Animate</button>
+    </div>
+    <div class="hdr-sep"></div>
+    <button class="hdr-btn" title="Toggle Grid (G)" onclick="toggleGrid()"><svg viewBox="0 0 16 16"><path d="M1 5h14M1 11h14M5 1v14M11 1v14"/></svg></button>
+    <button class="hdr-btn" title="Undo (⌘Z)" onclick="undo()"><svg viewBox="0 0 16 16"><path d="M3 7a5 5 0 1 0 1-3.5L1 1v4h4"/></svg></button>
+    <button class="hdr-btn" title="Import JSON" onclick="importJSON()"><svg viewBox="0 0 16 16"><path d="M8 2v9M4 8l4 4 4-4M3 14h10"/></svg></button>
+    <button class="hdr-btn" title="Export JSON (⌘S)" onclick="exportJSON()"><svg viewBox="0 0 16 16"><path d="M8 10V2M4 6l4-4 4 4M3 14h10"/></svg></button>
+    <button class="hdr-btn danger" title="Clear All" onclick="confirmClear()"><svg viewBox="0 0 16 16"><path d="M2 4h12M5 4V2h6v2M13 4l-1 10H4L3 4M7 7v4M9 7v4"/></svg></button>
+    <div class="hdr-spacer"></div>
+    <label style="font-size:9px;color:var(--text3);font-family:var(--font-mono);letter-spacing:.08em;margin-right:2px">EASE</label>
+    <select class="easing-sel" id="easing-sel" onchange="state.easing=this.value">
+      <option value="smooth">SMOOTH</option>
+      <option value="linear">LINEAR</option>
+      <option value="ease-in">EASE IN</option>
+      <option value="ease-out">EASE OUT</option>
+      <option value="bounce">BOUNCE</option>
+    </select>
+    <div class="hdr-sep"></div>
+    <span id="frame-readout">F:0 / 179</span>
+  </header>
+
+  <!-- TOOLBAR -->
+  <aside id="toolbar">
+    <div class="tb-group" id="draw-tools">
+      <button class="tool-btn active" data-tool="pencil" onclick="setTool('pencil')" title="Pencil (P)"><svg viewBox="0 0 16 16"><path d="M12 2l2 2-9 9-3 1 1-3z"/><path d="M10 4l2 2"/></svg><span class="tool-lbl">PEN</span></button>
+      <button class="tool-btn" data-tool="brush" onclick="setTool('brush')" title="Brush (B)"><svg viewBox="0 0 16 16"><path d="M3 13c1-1 2-2 3-1s3-3 3-4l3-4-3 3c-1 0-4 2-4 3s-2 2-2 3z"/><path d="M10 4l2-2 2 2-2 2z"/></svg><span class="tool-lbl">BRUSH</span></button>
+      <button class="tool-btn" data-tool="eraser" onclick="setTool('eraser')" title="Eraser (E)"><svg viewBox="0 0 16 16"><rect x="2" y="7" width="12" height="7" rx="1"/><path d="M6 14V7l-4-4 3-3h6l3 3-4 4"/></svg><span class="tool-lbl">ERASE</span></button>
+    </div>
+    <div class="tb-group" id="rig-tools" style="display:none">
+      <button class="tool-btn active" data-tool="add-joint" onclick="setTool('add-joint')" title="Add Joint (J)"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="5"/><path d="M8 5v6M5 8h6"/></svg><span class="tool-lbl">JOINT</span></button>
+      <button class="tool-btn" data-tool="connect" onclick="setTool('connect')" title="Connect Bone (C)"><svg viewBox="0 0 16 16"><circle cx="3" cy="3" r="2"/><circle cx="13" cy="13" r="2"/><path d="M5 5l6 6"/></svg><span class="tool-lbl">BONE</span></button>
+      <button class="tool-btn" data-tool="move-joint" onclick="setTool('move-joint')" title="Move Joint (M)"><svg viewBox="0 0 16 16"><path d="M8 2v12M2 8h12M5 5l-3 3 3 3M11 5l3 3-3 3"/></svg><span class="tool-lbl">MOVE</span></button>
+      <button class="tool-btn" data-tool="delete-joint" onclick="setTool('delete-joint')" title="Delete Joint (X)"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="5"/><path d="M6 6l4 4M10 6l-4 4"/></svg><span class="tool-lbl">DEL</span></button>
+    </div>
+    <div class="tb-group" id="pose-tools" style="display:none">
+      <button class="tool-btn active" data-tool="fk" onclick="setTool('fk')" title="Forward Kinematics (F)"><svg viewBox="0 0 16 16"><circle cx="3" cy="3" r="2"/><circle cx="8" cy="10" r="2"/><circle cx="14" cy="6" r="2"/><path d="M5 3l6 3M9 10l3-3"/></svg><span class="tool-lbl">FK</span></button>
+      <button class="tool-btn" data-tool="ik" onclick="setTool('ik')" title="Inverse Kinematics (I)"><svg viewBox="0 0 16 16"><circle cx="3" cy="13" r="2"/><circle cx="8" cy="7" r="2"/><circle cx="13" cy="3" r="2"/><path d="M5 13l1.5-4M9.5 6l2-2"/></svg><span class="tool-lbl">IK</span></button>
+      <button class="tool-btn" data-tool="move-root" onclick="setTool('move-root')" title="Move Root (V)"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="3"/><path d="M8 2v2M8 12v2M2 8h2M12 8h2"/></svg><span class="tool-lbl">ROOT</span></button>
+    </div>
+    <div class="tb-sep"></div>
+    <button class="tool-btn" onclick="undo()" title="Undo (⌘Z)"><svg viewBox="0 0 16 16"><path d="M3 7a5 5 0 1 0 1-3.5L1 1v4h4"/></svg><span class="tool-lbl">UNDO</span></button>
+  </aside>
+
+  <!-- CANVAS -->
+  <main id="canvas-wrap">
+    <canvas id="main-canvas"></canvas>
+    <canvas id="cursor-canvas"></canvas>
+    <div class="canvas-hint" id="hint-bar">Draw your character with Apple Pencil or mouse</div>
+  </main>
+
+  <!-- RIGHT PANEL -->
+  <aside id="right-panel">
+
+    <div class="panel-sec" id="layers-sec">
+      <div class="panel-hdr">
+        <span class="panel-title">Layers</span>
+        <button class="panel-action" onclick="addLayer()">+ ADD</button>
+      </div>
+      <div id="layer-list"></div>
+    </div>
+
+    <div class="panel-sec" id="draw-props">
+      <div class="panel-hdr"><span class="panel-title">Brush</span></div>
+      <div class="prop-row">
+        <span class="prop-lbl">Color</span>
+        <input type="color" id="color-pick" value="#ffffff" oninput="state.drawColor=this.value">
+      </div>
+      <div class="prop-row">
+        <span class="prop-lbl">Size</span>
+        <input type="range" id="size-range" min="1" max="60" value="4" oninput="state.strokeWidth=+this.value;document.getElementById('size-val').textContent=this.value">
+        <span class="prop-val" id="size-val">4</span>
+      </div>
+      <div class="prop-row">
+        <span class="prop-lbl">Opacity</span>
+        <input type="range" id="opacity-range" min="5" max="100" value="100" oninput="state.strokeOpacity=this.value/100;document.getElementById('opacity-val').textContent=this.value+'%'">
+        <span class="prop-val" id="opacity-val">100%</span>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-lbl">Pressure Sensitivity</span>
+        <button class="toggle on" id="pressure-toggle" onclick="togglePressure(this)"></button>
+      </div>
+    </div>
+
+    <div class="panel-sec" id="rig-props" style="display:none">
+      <div class="panel-hdr">
+        <span class="panel-title">Skeleton</span>
+        <button class="panel-action" onclick="autoAssignStrokes()">AUTO-ASSIGN</button>
+      </div>
+      <div id="bone-tree" class="bone-tree"></div>
+      <div class="btn-row" style="margin-top:8px">
+        <button class="btn teal" onclick="autoAssignStrokes()">Assign</button>
+        <button class="btn" onclick="clearRig()">Clear Rig</button>
+      </div>
+      <div style="margin-top:8px;font-size:10px;color:var(--text3);line-height:1.65">
+        Place joints → connect bones → Auto-Assign links your drawing
+      </div>
+    </div>
+
+    <div class="panel-sec" id="pose-props" style="display:none">
+      <div class="panel-hdr"><span class="panel-title">Pose</span></div>
+      <div class="btn-row">
+        <button class="btn primary" onclick="addKeyframeAll()">+ Keyframe</button>
+        <button class="btn" onclick="resetPose()">Reset</button>
+      </div>
+      <div class="btn-row" style="margin-top:6px">
+        <button class="btn" onclick="copyPose()">Copy</button>
+        <button class="btn" onclick="pastePose()">Paste</button>
+      </div>
+      <div style="margin-top:8px;font-size:10px;color:var(--text3);line-height:1.65">
+        FK: drag any joint to rotate bone<br>IK: drag end joint, chain solves
+      </div>
+    </div>
+
+    <div class="panel-sec">
+      <div class="panel-hdr"><span class="panel-title">Onion Skin</span></div>
+      <div class="toggle-row">
+        <span class="toggle-lbl">Show Onion Skin</span>
+        <button class="toggle on" id="onion-toggle" onclick="toggleOnion(this)"></button>
+      </div>
+      <div class="prop-row" style="margin-top:4px">
+        <span class="prop-lbl" style="width:52px">Depth</span>
+        <div class="depth-btns">
+          <button class="depth-btn active" data-depth="1" onclick="setOnionDepth(1)">1</button>
+          <button class="depth-btn" data-depth="2" onclick="setOnionDepth(2)">2</button>
+          <button class="depth-btn" data-depth="3" onclick="setOnionDepth(3)">3</button>
+        </div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- TIMELINE -->
+  <section id="timeline-section">
+    <div class="tl-ctrl">
+      <button class="tl-btn" onclick="goToStart()" title="Go to Start"><svg viewBox="0 0 16 16"><path d="M3 2v12M5 8l7-5v10z"/></svg></button>
+      <button class="tl-btn" onclick="prevFrame()" title="Prev Frame (←)"><svg viewBox="0 0 16 16"><path d="M10 3L4 8l6 5zM4 3v10"/></svg></button>
+      <button class="play-btn" id="play-btn" onclick="togglePlay()" title="Play/Pause (Space)"><svg viewBox="0 0 16 16" id="play-icon"><polygon points="5,2 14,8 5,14" fill="#fff" stroke="none"/></svg></button>
+      <button class="tl-btn" onclick="nextFrame()" title="Next Frame (→)"><svg viewBox="0 0 16 16"><path d="M6 3l6 5-6 5zM12 3v10"/></svg></button>
+      <button class="tl-btn" onclick="goToEnd()" title="Go to End"><svg viewBox="0 0 16 16"><path d="M13 2v12M11 8L4 3v10z"/></svg></button>
+      <div class="tl-spacer"></div>
+      <button class="kf-btn" onclick="addKeyframeAll()" title="Add Keyframe (K)">◆ Keyframe</button>
+      <span class="tl-fps" onclick="changeFPS()" title="Click to change FPS" id="fps-lbl">24 fps</span>
+      <button class="tl-btn" onclick="changeFrameCount()" title="Change total frames"><svg viewBox="0 0 16 16"><path d="M2 8h12M9 5l3 3-3 3"/></svg></button>
+    </div>
+    <div id="tl-scroll">
+      <div class="tl-labels" id="tl-labels">
+        <div class="tl-lbl-row hdr">TRACK</div>
+      </div>
+      <div class="tl-canvas-wrap" id="tl-canvas-wrap">
+        <canvas id="tl-canvas"></canvas>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="toast"></div>
+
+<!-- Context Menu -->
+<div id="ctx-menu">
+  <div class="ctx-item" id="ctx-del-kf" onclick="ctxDeleteKeyframe()">
+    <svg viewBox="0 0 16 16"><path d="M2 4h12M5 4V2h6v2M13 4l-1 10H4L3 4"/></svg> Delete Keyframe
+  </div>
+  <div class="ctx-item" id="ctx-copy-pose" onclick="copyPose()">
+    <svg viewBox="0 0 16 16"><rect x="5" y="5" width="9" height="9" rx="1"/><path d="M2 11V2h9"/></svg> Copy Pose
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════════════
+// MARROW — Professional 2D Bone Animation Engine v2.0
+// ════════════════════════════════════════════════════════════════════════
+
+// ─── CONSTANTS ──────────────────────────────────────────────────────────
+const JOINT_R   = 9;
+const BONE_W    = 5;
+const HIT_R     = 20;
+const FRAME_W   = 14;   // pixels per frame in timeline
+const ROW_H     = 24;   // timeline row height
+const TL_HDR    = 20;   // timeline header height
+
+// ─── STATE ──────────────────────────────────────────────────────────────
+const state = {
+  mode: 'draw',   tool: 'pencil',
+  drawColor: '#ffffff',  strokeWidth: 4,  strokeOpacity: 1,
+  pressureSensitive: true,  gridOn: false,
+
+  // Layers / drawing
+  layers: [],  currentLayerId: null,
+  isDrawing: false,  currentStroke: null,
+
+  // Rig
+  joints: [],   // {id, x, y, restX, restY, name}
+  bones: [],    // {id, rootJid, tipJid, parentBid, name, restAngle, worldAngle, length}
+  selectedJid: null,  selectedBid: null,
+  connectFrom: null,  _connPreview: null,
+  draggingJid: null,  dragOX: 0,  dragOY: 0,
+
+  // Keyframes — per bone/root-joint tracks
+  // boneTracks:  {boneId:  [{f, angle, easing}]}  sorted by f
+  // rootTracks:  {jointId: [{f, x, y, easing}]}   sorted by f
+  boneTracks: {},  rootTracks: {},
+
+  // Playback
+  currentFrame: 0,  totalFrames: 180,  fps: 24,
+  playing: false,  _raf: null,  _lastTick: 0,
+
+  // Pose clipboard
+  poseClipboard: null,
+
+  // Onion skin
+  onionOn: true,  onionDepth: 1,
+
+  // Easing (for new keyframes)
+  easing: 'smooth',
+
+  // History
+  history: [],  MAX_HISTORY: 50,
+
+  // IK
+  _ikChain: null,  // {bone1, bone2, rootJid, midJid, tipJid}
+
+  // Currently dragged bones (for selective auto-keyframe)
+  _movedBones: new Set(),
+};
+
+// ─── UTILITIES ──────────────────────────────────────────────────────────
+let _uid = 1;
+function uid()   { return 'i'+(++_uid); }
+function lerp(a,b,t) { return a + (b-a)*t; }
+function dist(ax,ay,bx,by) { return Math.hypot(ax-bx, ay-by); }
+function angle(ax,ay,bx,by) { return Math.atan2(by-ay, bx-ax); }
+function lerpAngle(a,b,t) {
+  let d = b - a;
+  while(d > Math.PI)  d -= Math.PI*2;
+  while(d < -Math.PI) d += Math.PI*2;
+  return a + d*t;
+}
+function applyEasing(t, type) {
+  switch(type) {
+    case 'linear':  return t;
+    case 'ease-in': return t*t;
+    case 'ease-out':return 1-(1-t)*(1-t);
+    case 'bounce': {
+      const c4 = (2*Math.PI)/3;
+      return t===0?0:t===1?1:Math.pow(2,-10*t)*Math.sin((t*10-0.75)*c4)+1;
+    }
+    default: return t*t*(3-2*t); // smooth
+  }
+}
+function hexAlpha(hex,a) {
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function getJoint(id) { return state.joints.find(j=>j.id===id); }
+function getBone(id)  { return state.bones.find(b=>b.id===id); }
+function getLayer(id) { return state.layers.find(l=>l.id===id); }
+function currentLayer(){ return getLayer(state.currentLayerId); }
+function rootJoints()  {
+  const tips = new Set(state.bones.map(b=>b.tipJid));
+  return state.joints.filter(j=>!tips.has(j.id));
+}
+
+let _toastTimer;
+function showToast(msg, dur=1800) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(()=>t.classList.remove('show'), dur);
+}
+
+// ─── CANVAS SETUP ───────────────────────────────────────────────────────
+const wrap    = document.getElementById('canvas-wrap');
+const canvas  = document.getElementById('main-canvas');
+const ctx     = canvas.getContext('2d');
+const curCvs  = document.getElementById('cursor-canvas');
+const curCtx  = curCvs.getContext('2d');
+let DPR = 1;
+
+function resizeCanvas() {
+  DPR = window.devicePixelRatio || 1;
+  const W = wrap.clientWidth, H = wrap.clientHeight;
+  [canvas, curCvs].forEach(c => {
+    c.style.width = W+'px'; c.style.height = H+'px';
+    c.width = W*DPR; c.height = H*DPR;
+  });
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  curCtx.setTransform(DPR,0,0,DPR,0,0);
+  render();
+}
+function cW() { return canvas.width/DPR; }
+function cH() { return canvas.height/DPR; }
+
+// ─── LAYER MANAGEMENT ───────────────────────────────────────────────────
+function addLayer(name) {
+  const layer = { id:uid(), name:name||'Layer '+(state.layers.length+1), visible:true, locked:false, strokes:[], opacity:1 };
+  state.layers.push(layer);
+  state.currentLayerId = layer.id;
+  updateLayerUI(); render();
+}
+
+function updateLayerUI() {
+  const list = document.getElementById('layer-list');
+  list.innerHTML = '';
+  [...state.layers].reverse().forEach(layer => {
+    const d = document.createElement('div');
+    d.className = 'layer-item' + (layer.id === state.currentLayerId ? ' active' : '');
+    d.innerHTML = `
+      <button class="layer-vis-btn" onclick="toggleLayerVis('${layer.id}')" title="Toggle Visible">
+        ${layer.visible ? '●' : '○'}
+      </button>
+      <span class="layer-name">${layer.name}</span>
+      <button class="layer-del" onclick="deleteLayer('${layer.id}')" title="Delete Layer">✕</button>`;
+    d.addEventListener('pointerdown', ()=>{ state.currentLayerId=layer.id; updateLayerUI(); });
+    list.appendChild(d);
+  });
+}
+function toggleLayerVis(id) {
+  const l = getLayer(id); if(l) { l.visible = !l.visible; updateLayerUI(); render(); }
+}
+function deleteLayer(id) {
+  if(state.layers.length <= 1) { showToast('Cannot delete last layer'); return; }
+  state.layers = state.layers.filter(l=>l.id!==id);
+  if(state.currentLayerId === id) state.currentLayerId = state.layers[0].id;
+  updateLayerUI(); render();
+}
+
+// ─── DRAWING ────────────────────────────────────────────────────────────
+function getPos(e) {
+  const r = canvas.getBoundingClientRect();
+  return { x: e.clientX-r.left, y: e.clientY-r.top,
+    p: (state.pressureSensitive && e.pointerType==='pen') ? (e.pressure||0.5) : 0.5 };
+}
+
+function startDraw(e) {
+  const layer = currentLayer(); if(!layer||layer.locked) return;
+  pushHistory();
+  const pos = getPos(e);
+  state.currentStroke = {
+    id: uid(), layerId: layer.id, boneId: null,
+    color: state.tool==='eraser' ? '#eraser' : state.drawColor,
+    width: state.strokeWidth, opacity: state.strokeOpacity,
+    soft: state.tool==='brush',
+    points: [{x:pos.x, y:pos.y, p:pos.p}],
+    restPoints: null,
+  };
+  state.isDrawing = true;
+}
+
+function continueDraw(e) {
+  if(!state.isDrawing||!state.currentStroke) return;
+  const pos = getPos(e);
+  const pts = state.currentStroke.points;
+  const last = pts[pts.length-1];
+  if(dist(last.x,last.y,pos.x,pos.y) < 1.5) return;
+  pts.push({x:pos.x, y:pos.y, p:pos.p});
+  render();
+}
+
+function endDraw() {
+  if(!state.isDrawing) return;
+  state.isDrawing = false;
+  if(state.currentStroke && state.currentStroke.points.length > 1) {
+    const layer = currentLayer();
+    if(layer) layer.strokes.push(state.currentStroke);
+  }
+  state.currentStroke = null; render();
+}
+
+// ─── STROKE RENDERING ───────────────────────────────────────────────────
+function drawStroke(c, stroke, boneTransform) {
+  const pts = stroke.restPoints || stroke.points;
+  if(!pts || pts.length < 2) return;
+
+  c.save();
+  if(boneTransform) {
+    // Correct rigid-body transform: rotate around rest root, translate to current root
+    // p' = R(da) * (p - restRoot) + currentRoot
+    c.translate(boneTransform.tx, boneTransform.ty);
+    c.rotate(boneTransform.da);
+    c.translate(-boneTransform.rx, -boneTransform.ry);
+  }
+
+  if(stroke.color === '#eraser') {
+    c.globalCompositeOperation = 'destination-out'; c.globalAlpha = 1;
+  } else {
+    c.globalCompositeOperation = 'source-over'; c.globalAlpha = stroke.opacity||1;
+  }
+
+  for(let i = 1; i < pts.length; i++) {
+    const a = pts[i-1], b = pts[i];
+    const p = (a.p+b.p)/2;
+    const w = stroke.width * (0.3 + p*1.4);
+    const mx = (a.x+b.x)/2, my = (a.y+b.y)/2;
+
+    if(stroke.soft) {
+      const grad = c.createRadialGradient(mx,my,0,mx,my,w*1.8);
+      grad.addColorStop(0, hexAlpha(stroke.color, stroke.opacity||1));
+      grad.addColorStop(1, hexAlpha(stroke.color, 0));
+      c.beginPath(); c.arc(mx,my,w*1.8,0,Math.PI*2);
+      c.fillStyle=grad; c.fill();
+    } else {
+      c.beginPath();
+      c.strokeStyle = stroke.color; c.lineWidth = w;
+      c.lineCap = 'round'; c.lineJoin = 'round';
+      c.moveTo(a.x, a.y);
+      if(i < pts.length-1) {
+        const nx=(b.x+pts[i+1].x)/2, ny=(b.y+pts[i+1].y)/2;
+        c.quadraticCurveTo(b.x,b.y,nx,ny);
+      } else { c.lineTo(b.x,b.y); }
+      c.stroke();
+    }
+  }
+  c.globalCompositeOperation='source-over'; c.globalAlpha=1; c.restore();
+}
+
+// ─── RIG SYSTEM ─────────────────────────────────────────────────────────
+function addJoint(x, y) {
+  pushHistory();
+  const j = { id:uid(), x, y, restX:x, restY:y, name:'J'+(state.joints.length+1) };
+  state.joints.push(j); updateBoneUI(); render(); return j;
+}
+
+function connectJoints(rootJid, tipJid) {
+  if(rootJid===tipJid) return;
+  if(state.bones.find(b=>b.rootJid===rootJid&&b.tipJid===tipJid)) return;
+  pushHistory();
+  const rj=getJoint(rootJid), tj=getJoint(tipJid);
+  const len = dist(rj.x,rj.y,tj.x,tj.y);
+  const ra  = angle(rj.x,rj.y,tj.x,tj.y);
+  const bone = {
+    id: uid(), rootJid, tipJid,
+    name: 'Bone '+(state.bones.length+1),
+    length: len, restAngle: ra, worldAngle: ra,
+    parentBid: null,
+  };
+  const parentBone = state.bones.find(b=>b.tipJid===rootJid);
+  if(parentBone) bone.parentBid = parentBone.id;
+  // Update parentBid for existing bones whose root is this bone's tip
+  state.bones.forEach(b => { if(b.rootJid===tipJid && !b.parentBid) b.parentBid=bone.id; });
+  state.bones.push(bone); updateBoneUI(); render();
+}
+
+function getBoneTransform(bone) {
+  const rj=getJoint(bone.rootJid), tj=getJoint(bone.tipJid);
+  if(!rj||!tj) return null;
+  const currentAngle = angle(rj.x,rj.y,tj.x,tj.y);
+  return { tx:rj.x, ty:rj.y, da:currentAngle-bone.restAngle, rx:rj.restX, ry:rj.restY };
+}
+
+function autoAssignStrokes() {
+  if(state.bones.length===0) { showToast('Add bones first'); return; }
+  let count = 0;
+  state.layers.forEach(layer => {
+    layer.strokes.forEach(stroke => {
+      if(stroke.boneId) return;
+      const pts = stroke.points;
+      const cx = pts.reduce((s,p)=>s+p.x,0)/pts.length;
+      const cy = pts.reduce((s,p)=>s+p.y,0)/pts.length;
+      let nearBid=null, nearD=Infinity;
+      state.bones.forEach(b => {
+        const rj=getJoint(b.rootJid), tj=getJoint(b.tipJid);
+        if(!rj||!tj) return;
+        const d = dist(cx,cy,(rj.x+tj.x)/2,(rj.y+tj.y)/2);
+        if(d<nearD) { nearD=d; nearBid=b.id; }
+      });
+      if(nearBid) { assignStrokeToBone(stroke, nearBid); count++; }
+    });
+  });
+  showToast(`Assigned ${count} strokes`); render();
+}
+
+function assignStrokeToBone(stroke, boneId) {
+  const bone=getBone(boneId), rj=getJoint(bone.rootJid);
+  if(!rj) return;
+  stroke.boneId = boneId;
+  const ra = bone.restAngle;
+  // Store rest-pose world positions (canvas transform handles the math)
+  stroke.restPoints = stroke.points.map(pt=>({x:pt.x, y:pt.y, p:pt.p}));
+}
+
+function clearRig() {
+  if(!confirm('Clear all bones, joints, and keyframes?')) return;
+  state.layers.forEach(l=>l.strokes.forEach(s=>{s.boneId=null;s.restPoints=null;}));
+  state.joints=[]; state.bones=[]; state.boneTracks={}; state.rootTracks={};
+  updateBoneUI(); updateTimelineUI(); render();
+}
+
+function deleteJoint(id) {
+  pushHistory();
+  state.bones = state.bones.filter(b=>b.rootJid!==id&&b.tipJid!==id);
+  state.joints = state.joints.filter(j=>j.id!==id);
+  if(state.selectedJid===id) state.selectedJid=null;
+  updateBoneUI(); render();
+}
+
+function updateBoneUI() {
+  const tree = document.getElementById('bone-tree');
+  tree.innerHTML = '';
+
+  // Build hierarchy display
+  function renderJoint(j, indent) {
+    const div = document.createElement('div');
+    div.className='bone-row'+(state.selectedJid===j.id?' active':'');
+    div.innerHTML=`${'<span class="bone-indent"></span>'.repeat(indent)}<div class="bone-dot j"></div><input class="bone-row-name" value="${j.name}" title="Click to select, dblclick to rename" readonly>`;
+    div.querySelector('.bone-row-name').addEventListener('dblclick',e=>{
+      e.target.readOnly=false; e.target.focus(); e.target.select();
+    });
+    div.querySelector('.bone-row-name').addEventListener('blur',e=>{
+      e.target.readOnly=true; j.name=e.target.value||j.name;
+    });
+    div.addEventListener('pointerdown',e=>{
+      if(e.target.tagName!=='INPUT') { state.selectedJid=j.id; state.selectedBid=null; render(); }
+    });
+    tree.appendChild(div);
+    // Children bones
+    state.bones.filter(b=>b.rootJid===j.id).forEach(bone=>{
+      const bd=document.createElement('div');
+      bd.className='bone-row'+(state.selectedBid===bone.id?' active':'');
+      bd.innerHTML=`${'<span class="bone-indent"></span>'.repeat(indent+1)}<div class="bone-dot b"></div><input class="bone-row-name" value="${bone.name}" readonly>`;
+      bd.querySelector('.bone-row-name').addEventListener('dblclick',e=>{e.target.readOnly=false;e.target.focus();e.target.select();});
+      bd.querySelector('.bone-row-name').addEventListener('blur',e=>{e.target.readOnly=true;bone.name=e.target.value||bone.name;updateTimelineUI();});
+      bd.addEventListener('pointerdown',e=>{ if(e.target.tagName!=='INPUT'){state.selectedBid=bone.id;render();} });
+      tree.appendChild(bd);
+      const tj=getJoint(bone.tipJid);
+      if(tj) renderJoint(tj, indent+2);
+    });
+  }
+
+  rootJoints().forEach(j=>renderJoint(j,0));
+}
+
+// ─── FK / IK POSE ───────────────────────────────────────────────────────
+function startPoseDrag(jid, x, y) {
+  state.draggingJid = jid;
+  const j = getJoint(jid);
+  state.dragOX = x - j.x; state.dragOY = y - j.y;
+  state._movedBones.clear();
+
+  // Detect IK chain: is this joint a tip of a bone whose root is a tip of another bone?
+  if(state.tool === 'ik') {
+    const bone2 = state.bones.find(b=>b.tipJid===jid);
+    if(bone2) {
+      const bone1 = state.bones.find(b=>b.tipJid===bone2.rootJid);
+      if(bone1) {
+        state._ikChain = { bone1, bone2, rootJid:bone1.rootJid, midJid:bone2.rootJid, tipJid:jid };
+      }
+    }
+  } else {
+    state._ikChain = null;
+  }
+}
+
+function updatePoseDrag(x, y) {
+  if(!state.draggingJid) return;
+  const j = getJoint(state.draggingJid);
+  const nx = x - state.dragOX, ny = y - state.dragOY;
+
+  if(state._ikChain && state.tool === 'ik') {
+    solveIK(state._ikChain, nx, ny);
+  } else {
+    const parentBone = state.bones.find(b=>b.tipJid===state.draggingJid);
+    if(parentBone && state.tool==='fk') {
+      const rj = getJoint(parentBone.rootJid);
+      const len = parentBone.length || 1;
+      const newAngle = angle(rj.x, rj.y, nx, ny);
+      const delta = newAngle - parentBone.worldAngle;
+      parentBone.worldAngle = newAngle;
+      j.x = rj.x + Math.cos(newAngle)*len;
+      j.y = rj.y + Math.sin(newAngle)*len;
+      propagateFK(parentBone.id, delta);
+      state._movedBones.add(parentBone.id);
+    } else {
+      // Move root joint
+      const dx = nx-j.x, dy = ny-j.y;
+      j.x=nx; j.y=ny;
+      moveBoneTree(state.draggingJid, dx, dy);
+    }
+  }
+  render();
+}
+
+function solveIK(chain, tx, ty) {
+  const root = getJoint(chain.rootJid);
+  const mid  = getJoint(chain.midJid);
+  const tip  = getJoint(chain.tipJid);
+  if(!root||!mid||!tip) return;
+
+  const l1 = chain.bone1.length;
+  const l2 = chain.bone2.length;
+  const dx = tx - root.x, dy = ty - root.y;
+  const d  = Math.min(Math.hypot(dx,dy), l1+l2-0.01);
+  const targetAngle = Math.atan2(dy, dx);
+
+  const cosA = Math.max(-1,Math.min(1,(l1*l1+d*d-l2*l2)/(2*l1*d)));
+  const a1 = Math.acos(cosA);
+
+  // Elbow direction: keep current sign to avoid flipping
+  const currentMidAngle = Math.atan2(mid.y-root.y, mid.x-root.x);
+  const sign = (lerpAngle(targetAngle-a1, targetAngle+a1, 0.5)-currentMidAngle) < 0 ? -1 : 1;
+  const midAngle = targetAngle - sign*a1;
+
+  mid.x = root.x + Math.cos(midAngle)*l1;
+  mid.y = root.y + Math.sin(midAngle)*l1;
+
+  const a2 = Math.atan2(ty-mid.y, tx-mid.x);
+  tip.x = mid.x + Math.cos(a2)*l2;
+  tip.y = mid.y + Math.sin(a2)*l2;
+
+  chain.bone1.worldAngle = midAngle;
+  chain.bone2.worldAngle = a2;
+  state._movedBones.add(chain.bone1.id);
+  state._movedBones.add(chain.bone2.id);
+}
+
+function propagateFK(boneId, delta) {
+  state.bones.filter(b=>b.parentBid===boneId).forEach(child=>{
+    const rj=getJoint(child.rootJid), tj=getJoint(child.tipJid);
+    if(!rj||!tj) return;
+    const dx=tj.x-rj.x, dy=tj.y-rj.y;
+    tj.x = rj.x + dx*Math.cos(delta) - dy*Math.sin(delta);
+    tj.y = rj.y + dx*Math.sin(delta) + dy*Math.cos(delta);
+    child.worldAngle = angle(rj.x,rj.y,tj.x,tj.y);
+    state._movedBones.add(child.id);
+    propagateFK(child.id, delta);
+  });
+}
+
+function moveBoneTree(rootJid, dx, dy) {
+  state.bones.filter(b=>b.rootJid===rootJid).forEach(bone=>{
+    const tj=getJoint(bone.tipJid); if(!tj) return;
+    tj.x+=dx; tj.y+=dy;
+    const rj=getJoint(bone.rootJid);
+    bone.worldAngle = angle(rj.x,rj.y,tj.x,tj.y);
+    moveBoneTree(bone.tipJid, dx, dy);
+  });
+}
+
+function endPoseDrag() {
+  state.draggingJid = null; state._ikChain = null;
+  if(state.mode==='animate' && state._movedBones.size>0) {
+    addKeyframeForBones(state._movedBones);
+    state._movedBones.clear();
+  }
+}
+
+function resetPose() {
+  pushHistory();
+  state.joints.forEach(j=>{j.x=j.restX;j.y=j.restY;});
+  state.bones.forEach(b=>{ const rj=getJoint(b.rootJid),tj=getJoint(b.tipJid); if(rj&&tj) b.worldAngle=angle(rj.x,rj.y,tj.x,tj.y); });
+  render(); showToast('Pose reset');
+}
+
+// ─── BONE TRACK KEYFRAME SYSTEM ─────────────────────────────────────────
+function getTrackFrames(boneId) {
+  return state.boneTracks[boneId] || [];
+}
+function getRootTrackFrames(jid) {
+  return state.rootTracks[jid] || [];
+}
+
+function interpolateBoneAngle(boneId, frame) {
+  const track = state.boneTracks[boneId];
+  const bone  = getBone(boneId);
+  if(!track||track.length===0) return bone ? bone.restAngle : 0;
+  const prev = [...track].reverse().find(k=>k.f<=frame);
+  const next = track.find(k=>k.f>frame);
+  if(!prev) return track[0].angle;
+  if(!next) return prev.angle;
+  const t = (frame-prev.f)/(next.f-prev.f);
+  return lerpAngle(prev.angle, next.angle, applyEasing(t, prev.easing||'smooth'));
+}
+
+function interpolateRootPos(jid, frame) {
+  const track = state.rootTracks[jid];
+  const j     = getJoint(jid);
+  if(!track||track.length===0) return j ? {x:j.restX, y:j.restY} : null;
+  const prev = [...track].reverse().find(k=>k.f<=frame);
+  const next = track.find(k=>k.f>frame);
+  if(!prev) return {x:track[0].x, y:track[0].y};
+  if(!next) return {x:prev.x, y:prev.y};
+  const t = (frame-prev.f)/(next.f-prev.f);
+  const et = applyEasing(t, prev.easing||'smooth');
+  return {x:lerp(prev.x,next.x,et), y:lerp(prev.y,next.y,et)};
+}
+
+function applyFrame(frame) {
+  if(state.bones.length===0) return;
+  // Set root joint positions
+  const roots = rootJoints();
+  roots.forEach(j=>{
+    const pos = interpolateRootPos(j.id, frame);
+    if(pos) { j.x=pos.x; j.y=pos.y; }
+  });
+  // Set all bone angles
+  state.bones.forEach(b=>{
+    b.worldAngle = interpolateBoneAngle(b.id, frame);
+  });
+  // Rebuild tip joint positions via FK from roots
+  roots.forEach(j=>rebuildFK(j.id));
+}
+
+function rebuildFK(rootJid) {
+  state.bones.filter(b=>b.rootJid===rootJid).forEach(bone=>{
+    const rj=getJoint(bone.rootJid), tj=getJoint(bone.tipJid);
+    if(!rj||!tj) return;
+    tj.x = rj.x + Math.cos(bone.worldAngle)*bone.length;
+    tj.y = rj.y + Math.sin(bone.worldAngle)*bone.length;
+    rebuildFK(bone.tipJid);
+  });
+}
+
+function addKeyframeAll() {
+  const f = state.currentFrame;
+  const e = state.easing;
+  // All bone tracks
+  state.bones.forEach(b=>{
+    if(!state.boneTracks[b.id]) state.boneTracks[b.id]=[];
+    state.boneTracks[b.id] = state.boneTracks[b.id].filter(k=>k.f!==f);
+    state.boneTracks[b.id].push({f, angle:b.worldAngle, easing:e});
+    state.boneTracks[b.id].sort((a,b2)=>a.f-b2.f);
+  });
+  // Root joints
+  rootJoints().forEach(j=>{
+    if(!state.rootTracks[j.id]) state.rootTracks[j.id]=[];
+    state.rootTracks[j.id] = state.rootTracks[j.id].filter(k=>k.f!==f);
+    state.rootTracks[j.id].push({f, x:j.x, y:j.y, easing:e});
+    state.rootTracks[j.id].sort((a,b)=>a.f-b.f);
+  });
+  showToast(`◆ Keyframe at F${f}`); drawTimeline();
+}
+
+function addKeyframeForBones(boneSet) {
+  const f = state.currentFrame;
+  const e = state.easing;
+  boneSet.forEach(bid=>{
+    const b=getBone(bid); if(!b) return;
+    if(!state.boneTracks[b.id]) state.boneTracks[b.id]=[];
+    state.boneTracks[b.id] = state.boneTracks[b.id].filter(k=>k.f!==f);
+    state.boneTracks[b.id].push({f, angle:b.worldAngle, easing:e});
+    state.boneTracks[b.id].sort((a,b2)=>a.f-b2.f);
+  });
+  // Also capture root joints that moved
+  rootJoints().forEach(j=>{
+    // check if any moved bones affect this root's descendants
+    const childBones = state.bones.filter(b=>b.rootJid===j.id);
+    const anyMoved = childBones.some(b=>boneSet.has(b.id));
+    if(!anyMoved) return; // naively check first-level; enough for typical rigs
+    if(!state.rootTracks[j.id]) state.rootTracks[j.id]=[];
+    state.rootTracks[j.id] = state.rootTracks[j.id].filter(k=>k.f!==f);
+    state.rootTracks[j.id].push({f, x:j.x, y:j.y, easing:e});
+    state.rootTracks[j.id].sort((a,b)=>a.f-b.f);
+  });
+  drawTimeline();
+}
+
+function removeKeyframeAt(boneId, frame) {
+  if(!state.boneTracks[boneId]) return;
+  state.boneTracks[boneId] = state.boneTracks[boneId].filter(k=>k.f!==frame);
+  drawTimeline(); showToast(`Keyframe deleted`);
+}
+
+// ─── POSE CLIPBOARD ─────────────────────────────────────────────────────
+function copyPose() {
+  state.poseClipboard = {
+    bones: state.bones.map(b=>({id:b.id, angle:b.worldAngle})),
+    roots: rootJoints().map(j=>({id:j.id, x:j.x, y:j.y})),
+  };
+  showToast('Pose copied');
+}
+
+function pastePose() {
+  if(!state.poseClipboard) { showToast('Nothing to paste'); return; }
+  pushHistory();
+  state.poseClipboard.bones.forEach(({id,angle})=>{ const b=getBone(id); if(b) b.worldAngle=angle; });
+  state.poseClipboard.roots.forEach(({id,x,y})=>{ const j=getJoint(id); if(j){j.x=x;j.y=y;} });
+  rootJoints().forEach(j=>rebuildFK(j.id));
+  if(state.mode==='animate') addKeyframeAll();
+  render(); showToast('Pose pasted');
+}
+
+// ─── PLAYBACK ────────────────────────────────────────────────────────────
+function togglePlay() {
+  state.playing = !state.playing;
+  const icon = document.getElementById('play-icon');
+  icon.innerHTML = state.playing
+    ? '<rect x="4" y="2" width="3" height="12" rx="1" fill="#fff" stroke="none"/><rect x="9" y="2" width="3" height="12" rx="1" fill="#fff" stroke="none"/>'
+    : '<polygon points="5,2 14,8 5,14" fill="#fff" stroke="none"/>';
+  if(state.playing) {
+    if(state.currentFrame >= state.totalFrames-1) state.currentFrame=0;
+    state._lastTick = performance.now();
+    requestAnimationFrame(playTick);
+  }
+}
+
+function playTick(now) {
+  if(!state.playing) return;
+  const dt = now - state._lastTick;
+  const frameDur = 1000/state.fps;
+  if(dt >= frameDur) {
+    state._lastTick = now - (dt % frameDur);
+    state.currentFrame = (state.currentFrame+1) % state.totalFrames;
+    applyFrame(state.currentFrame);
+    updateFrameReadout(); drawTimeline(); render();
+    // Auto-scroll timeline
+    const tlWrap=document.getElementById('tl-canvas-wrap');
+    const phX = state.currentFrame*FRAME_W + FRAME_W/2;
+    if(phX > tlWrap.scrollLeft + tlWrap.clientWidth - 40) tlWrap.scrollLeft = phX - tlWrap.clientWidth/2;
+  }
+  requestAnimationFrame(playTick);
+}
+
+function goToStart() { state.currentFrame=0; applyFrame(0); updateFrameReadout(); drawTimeline(); render(); }
+function goToEnd()   { state.currentFrame=state.totalFrames-1; applyFrame(state.currentFrame); updateFrameReadout(); drawTimeline(); render(); }
+function prevFrame() { state.currentFrame=Math.max(0,state.currentFrame-1); applyFrame(state.currentFrame); updateFrameReadout(); drawTimeline(); render(); }
+function nextFrame() { state.currentFrame=Math.min(state.totalFrames-1,state.currentFrame+1); applyFrame(state.currentFrame); updateFrameReadout(); drawTimeline(); render(); }
+
+function updateFrameReadout() {
+  document.getElementById('frame-readout').textContent = `F:${state.currentFrame} / ${state.totalFrames-1}`;
+}
+
+function changeFPS() {
+  const v = prompt('FPS (1–60):', state.fps);
+  if(!v) return;
+  const fps = Math.max(1,Math.min(60,parseInt(v)));
+  if(!isNaN(fps)) { state.fps=fps; document.getElementById('fps-lbl').textContent=fps+' fps'; }
+}
+function changeFrameCount() {
+  const v = prompt('Total frames:', state.totalFrames);
+  if(!v) return;
+  const n = Math.max(12, Math.min(3600, parseInt(v)));
+  if(!isNaN(n)) { state.totalFrames=n; updateFrameReadout(); drawTimeline(); }
+}
+
+// ─── TIMELINE ────────────────────────────────────────────────────────────
+const tlCanvas = document.getElementById('tl-canvas');
+const tlCtx    = tlCanvas.getContext('2d');
+const tlWrap   = document.getElementById('tl-canvas-wrap');
+const tlLabels = document.getElementById('tl-labels');
+let tlDragging = false;
+
+function updateTimelineUI() {
+  tlLabels.innerHTML = '<div class="tl-lbl-row hdr">TRACK</div>';
+  // Root joint rows
+  rootJoints().forEach(j=>{
+    const row=document.createElement('div');
+    row.className='tl-lbl-row root-track'; row.textContent='↠ '+j.name;
+    row.title='Root position track for '+j.name;
+    tlLabels.appendChild(row);
+  });
+  // Bone rows
+  state.bones.forEach(bone=>{
+    const row=document.createElement('div');
+    row.className='tl-lbl-row'; row.textContent=bone.name;
+    tlLabels.appendChild(row);
+  });
+  if(state.bones.length===0 && rootJoints().length===0) {
+    const row=document.createElement('div');
+    row.className='tl-lbl-row'; row.textContent='No tracks'; row.style.color='var(--text3)';
+    tlLabels.appendChild(row);
+  }
+  drawTimeline();
+}
+
+function drawTimeline() {
+  const W  = tlWrap.clientWidth||500;
+  const roots = rootJoints();
+  const trackCount = roots.length + state.bones.length;
+  const rows = Math.max(trackCount, 1);
+  const H = TL_HDR + rows*ROW_H;
+  const totalW = Math.max(W, state.totalFrames*FRAME_W);
+
+  tlCanvas.width  = totalW * DPR;
+  tlCanvas.height = H * DPR;
+  tlCanvas.style.width  = totalW+'px';
+  tlCanvas.style.height = H+'px';
+  tlCtx.setTransform(DPR,0,0,DPR,0,0);
+
+  const tc = tlCtx;
+  tc.clearRect(0,0,totalW,H);
+
+  // Background alternating rows
+  for(let r=0; r<rows; r++) {
+    const y = TL_HDR + r*ROW_H;
+    tc.fillStyle = r%2===0 ? '#0c0c12' : '#0e0e15';
+    tc.fillRect(0, y, totalW, ROW_H);
+  }
+
+  // 10-frame markers
+  for(let f=0; f<state.totalFrames; f+=10) {
+    const x=f*FRAME_W;
+    tc.fillStyle='#151520';
+    tc.fillRect(x, TL_HDR, FRAME_W*10, rows*ROW_H);
+  }
+
+  // Header
+  tc.fillStyle='#0a0a14';
+  tc.fillRect(0,0,totalW,TL_HDR);
+
+  // Frame numbers
+  tc.font='8px IBM Plex Mono, monospace';
+  tc.textAlign='center'; tc.fillStyle='#3a3a58';
+  for(let f=0; f<state.totalFrames; f+=5) {
+    const x = f*FRAME_W + FRAME_W/2;
+    if(f%10===0) { tc.fillStyle='#4a4a70'; tc.fillText(f,x,TL_HDR-3); tc.fillStyle='#3a3a58'; }
+  }
+
+  // Vertical lines
+  for(let f=0; f<state.totalFrames; f++) {
+    const x=f*FRAME_W;
+    tc.strokeStyle = f%10===0 ? '#1e1e2e' : '#141420';
+    tc.lineWidth=0.5;
+    tc.beginPath(); tc.moveTo(x,TL_HDR); tc.lineTo(x,H); tc.stroke();
+  }
+
+  // Horizontal row lines
+  for(let r=0; r<=rows; r++) {
+    const y=TL_HDR+r*ROW_H;
+    tc.strokeStyle='#1a1a28'; tc.lineWidth=0.5;
+    tc.beginPath(); tc.moveTo(0,y); tc.lineTo(totalW,y); tc.stroke();
+  }
+
+  // Track content
+  let rowIdx = 0;
+
+  // Root joint tracks
+  roots.forEach(j=>{
+    const track = state.rootTracks[j.id]||[];
+    const y = TL_HDR + rowIdx*ROW_H;
+    // Interpolation lines
+    if(track.length>1) {
+      tc.strokeStyle='rgba(0,212,170,0.25)'; tc.lineWidth=1;
+      tc.beginPath();
+      track.forEach((k,i)=>{ const x=k.f*FRAME_W+FRAME_W/2; i===0?tc.moveTo(x,y+ROW_H/2):tc.lineTo(x,y+ROW_H/2); });
+      tc.stroke();
+    }
+    // Diamonds
+    track.forEach(k=>{
+      const x=k.f*FRAME_W+FRAME_W/2;
+      drawDiamond(tc, x, y+ROW_H/2, '#00d4aa', k.f===state.currentFrame);
+    });
+    rowIdx++;
+  });
+
+  // Bone tracks
+  state.bones.forEach(bone=>{
+    const track = state.boneTracks[bone.id]||[];
+    const y = TL_HDR + rowIdx*ROW_H;
+    // Interpolation line
+    if(track.length>1) {
+      tc.strokeStyle='rgba(255,160,64,0.25)'; tc.lineWidth=1;
+      tc.beginPath();
+      track.forEach((k,i)=>{ const x=k.f*FRAME_W+FRAME_W/2; i===0?tc.moveTo(x,y+ROW_H/2):tc.lineTo(x,y+ROW_H/2); });
+      tc.stroke();
+    }
+    // Diamonds
+    track.forEach(k=>{
+      const x=k.f*FRAME_W+FRAME_W/2;
+      drawDiamond(tc, x, y+ROW_H/2, '#ffa040', k.f===state.currentFrame);
+    });
+    rowIdx++;
+  });
+
+  // Playhead
+  const phX = state.currentFrame*FRAME_W + FRAME_W/2;
+  tc.strokeStyle='rgba(232,87,42,0.7)'; tc.lineWidth=1.5;
+  tc.beginPath(); tc.moveTo(phX,0); tc.lineTo(phX,H); tc.stroke();
+  // Playhead triangle
+  tc.fillStyle='#e8572a';
+  tc.beginPath(); tc.moveTo(phX-5,0); tc.lineTo(phX+5,0); tc.lineTo(phX,8); tc.closePath(); tc.fill();
+}
+
+function drawDiamond(tc, x, y, color, current) {
+  const s = current ? 6 : 4.5;
+  tc.save();
+  tc.translate(x,y); tc.rotate(Math.PI/4);
+  tc.fillStyle = color;
+  tc.shadowColor = color; tc.shadowBlur = current ? 8 : 4;
+  tc.fillRect(-s/2,-s/2,s,s);
+  tc.restore();
+  tc.shadowBlur=0;
+}
+
+// Timeline pointer interaction
+let _tlCtxFrame = null, _tlCtxRow = null;
+tlCanvas.addEventListener('pointerdown', e=>{
+  const rect = tlCanvas.getBoundingClientRect();
+  const x = e.clientX - rect.left + tlWrap.scrollLeft;
+  const y = e.clientY - rect.top;
+  const f = Math.floor(x/FRAME_W);
+  if(f<0||f>=state.totalFrames) return;
+
+  if(e.button===2 || e.altKey) {
+    // Context menu for keyframe right-click
+    const row = Math.floor((y-TL_HDR)/ROW_H);
+    _tlCtxFrame = f; _tlCtxRow = row;
+    showCtxMenu(e.clientX, e.clientY);
+    e.preventDefault(); return;
+  }
+
+  tlDragging=true;
+  if(state.playing) togglePlay();
+  state.currentFrame=f;
+  applyFrame(f); updateFrameReadout(); render(); drawTimeline();
+  tlCanvas.setPointerCapture(e.pointerId);
+});
+tlCanvas.addEventListener('pointermove', e=>{
+  if(!tlDragging) return;
+  const rect=tlCanvas.getBoundingClientRect();
+  const x=e.clientX-rect.left+tlWrap.scrollLeft;
+  const f=Math.max(0,Math.min(state.totalFrames-1,Math.floor(x/FRAME_W)));
+  if(f===state.currentFrame) return;
+  state.currentFrame=f;
+  applyFrame(f); updateFrameReadout(); render(); drawTimeline();
+});
+tlCanvas.addEventListener('pointerup', ()=>{ tlDragging=false; });
+tlCanvas.addEventListener('contextmenu', e=>e.preventDefault());
+
+// Context menu
+function showCtxMenu(cx, cy) {
+  const m=document.getElementById('ctx-menu');
+  m.style.display='block'; m.style.left=cx+'px'; m.style.top=cy+'px';
+  document.addEventListener('pointerdown', hideCtxMenu, {once:true});
+}
+function hideCtxMenu() { document.getElementById('ctx-menu').style.display='none'; }
+function ctxDeleteKeyframe() {
+  if(_tlCtxRow===null||_tlCtxFrame===null) return;
+  hideCtxMenu();
+  const roots = rootJoints();
+  if(_tlCtxRow < roots.length) {
+    const j=roots[_tlCtxRow];
+    if(state.rootTracks[j.id]) {
+      state.rootTracks[j.id]=state.rootTracks[j.id].filter(k=>k.f!==_tlCtxFrame);
+      showToast('Root keyframe deleted'); drawTimeline();
+    }
+  } else {
+    const bi = _tlCtxRow - roots.length;
+    const bone = state.bones[bi];
+    if(bone) removeKeyframeAt(bone.id, _tlCtxFrame);
+  }
+}
+
+// ─── MAIN RENDER ─────────────────────────────────────────────────────────
+function render() {
+  const W=cW(), H=cH();
+  ctx.clearRect(0,0,W,H);
+
+  // Grid
+  if(state.gridOn) {
+    const step=24;
+    ctx.strokeStyle='#131320'; ctx.lineWidth=0.5;
+    for(let x=0;x<W;x+=step){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+    for(let y=0;y<H;y+=step){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+  }
+
+  // Onion skin
+  if(state.onionOn && (state.mode==='animate'||state.mode==='pose')) {
+    const d = state.onionDepth;
+    for(let o=d; o>=1; o--) {
+      const alpha = (0.28/o) * 0.8;
+      // Previous frames (teal)
+      if(state.currentFrame-o >= 0) {
+        renderLayersGhost(state.currentFrame-o, hexAlpha('#00d4aa', alpha));
+      }
+      // Next frames (orange)
+      if(state.onionDepth>=2 && state.currentFrame+o < state.totalFrames) {
+        renderLayersGhost(state.currentFrame+o, hexAlpha('#ffa040', alpha));
+      }
+    }
+    // Restore current frame
+    applyFrame(state.currentFrame);
+  }
+
+  // Normal layer render
+  renderLayers();
+
+  // Rig overlay (all non-draw modes)
+  if(state.mode !== 'draw') drawRig();
+
+  // Live stroke
+  if(state.isDrawing && state.currentStroke) drawStroke(ctx, state.currentStroke, null);
+}
+
+function renderLayers() {
+  state.layers.forEach(layer=>{
+    if(!layer.visible) return;
+    ctx.save(); ctx.globalAlpha=layer.opacity;
+    layer.strokes.forEach(stroke=>{
+      let xform = null;
+      if(stroke.boneId) {
+        const bone=getBone(stroke.boneId);
+        if(bone) xform=getBoneTransform(bone);
+      }
+      drawStroke(ctx, stroke, xform);
+    });
+    ctx.restore();
+  });
+}
+
+function renderLayersGhost(frame, color) {
+  // Temporarily apply frame state
+  const savedJoints = state.joints.map(j=>({...j}));
+  const savedBones  = state.bones.map(b=>({...b}));
+  applyFrame(frame);
+
+  state.layers.forEach(layer=>{
+    if(!layer.visible) return;
+    ctx.save(); ctx.globalAlpha=1;
+    layer.strokes.forEach(stroke=>{
+      let xform=null;
+      if(stroke.boneId){const bone=getBone(stroke.boneId);if(bone) xform=getBoneTransform(bone);}
+      const ghost = {...stroke, color, opacity:1, boneId:null};
+      if(xform) {
+        ctx.save();
+        ctx.translate(xform.tx,xform.ty); ctx.rotate(xform.da); ctx.translate(-xform.rx,-xform.ry);
+        drawStroke(ctx, ghost, null);
+        ctx.restore();
+      } else { drawStroke(ctx, ghost, null); }
+    });
+    ctx.restore();
+  });
+
+  // Restore
+  state.joints.forEach((j,i)=>{j.x=savedJoints[i].x;j.y=savedJoints[i].y;});
+  state.bones.forEach((b,i)=>{b.worldAngle=savedBones[i].worldAngle;});
+}
+
+function drawRig() {
+  const c = ctx;
+
+  // Bones
+  state.bones.forEach(bone=>{
+    const rj=getJoint(bone.rootJid), tj=getJoint(bone.tipJid);
+    if(!rj||!tj) return;
+    const sel = state.selectedBid===bone.id;
+    const len = dist(rj.x,rj.y,tj.x,tj.y);
+    const ba  = angle(rj.x,rj.y,tj.x,tj.y);
+    const w   = sel ? 9 : 6;
+
+    c.save(); c.translate(rj.x,rj.y); c.rotate(ba);
+    c.beginPath();
+    c.moveTo(0,0); c.lineTo(w,w*.45); c.lineTo(len,0); c.lineTo(w,-w*.45); c.closePath();
+    c.fillStyle   = sel ? 'rgba(74,232,216,0.2)' : 'rgba(255,107,46,0.12)';
+    c.strokeStyle = sel ? '#4ae8d8' : '#ff6b2e';
+    c.lineWidth   = sel ? 1.8 : 1.2;
+    c.fill(); c.stroke(); c.restore();
+  });
+
+  // Connect preview line
+  if(state.connectFrom && state._connPreview) {
+    const j=getJoint(state.connectFrom);
+    c.beginPath(); c.moveTo(j.x,j.y); c.lineTo(state._connPreview.x,state._connPreview.y);
+    c.strokeStyle='rgba(245,197,24,0.5)'; c.lineWidth=1.5; c.setLineDash([5,3]); c.stroke(); c.setLineDash([]);
+  }
+
+  // Joints
+  state.joints.forEach(j=>{
+    const sel = state.selectedJid===j.id;
+    const drag= state.draggingJid===j.id;
+    const isRoot = !state.bones.find(b=>b.tipJid===j.id);
+
+    // Hit area glow
+    if(sel||drag) {
+      c.beginPath(); c.arc(j.x,j.y,JOINT_R+5,0,Math.PI*2);
+      c.strokeStyle=sel?'rgba(74,232,216,0.4)':'rgba(245,197,24,0.4)';
+      c.lineWidth=2; c.stroke();
+    }
+    // Outer ring
+    c.beginPath(); c.arc(j.x,j.y,JOINT_R,0,Math.PI*2);
+    c.strokeStyle = drag ? '#f5c518' : (sel ? '#4ae8d8' : 'rgba(245,197,24,0.5)');
+    c.lineWidth=1.5; c.stroke();
+
+    // Fill
+    c.beginPath(); c.arc(j.x,j.y,JOINT_R-2,0,Math.PI*2);
+    const color = drag ? '#f5c518' : (sel ? '#4ae8d8' : (isRoot ? '#ff6b2e' : '#ffa040'));
+    c.fillStyle=color; c.shadowColor=color; c.shadowBlur=drag?14:6; c.fill(); c.shadowBlur=0;
+
+    // Center cross
+    c.strokeStyle='rgba(0,0,0,0.5)'; c.lineWidth=1.5;
+    c.beginPath(); c.moveTo(j.x-3,j.y); c.lineTo(j.x+3,j.y); c.moveTo(j.x,j.y-3); c.lineTo(j.x,j.y+3); c.stroke();
+  });
+}
+
+// ─── POINTER EVENTS ──────────────────────────────────────────────────────
+canvas.addEventListener('pointerdown', onDown, {passive:false});
+canvas.addEventListener('pointermove', onMove, {passive:false});
+canvas.addEventListener('pointerup',   onUp,   {passive:false});
+canvas.addEventListener('pointercancel', onUp, {passive:false});
+canvas.addEventListener('contextmenu', e=>e.preventDefault());
+
+function onDown(e) {
+  e.preventDefault(); canvas.setPointerCapture(e.pointerId);
+  const pos = getPos(e);
+
+  if(state.mode==='draw') {
+    startDraw(e);
+
+  } else if(state.mode==='rig') {
+    if(state.tool==='add-joint') {
+      const hit=getJointAt(pos.x,pos.y);
+      if(hit) { state.selectedJid=hit.id; render(); }
+      else addJoint(pos.x,pos.y);
+
+    } else if(state.tool==='connect') {
+      const hit=getJointAt(pos.x,pos.y);
+      if(hit) {
+        if(!state.connectFrom) {
+          state.connectFrom=hit.id; showToast('Tap another joint to connect');
+        } else if(state.connectFrom!==hit.id) {
+          connectJoints(state.connectFrom, hit.id);
+          state.connectFrom=null; state._connPreview=null;
+        }
+      }
+
+    } else if(state.tool==='move-joint') {
+      const hit=getJointAt(pos.x,pos.y);
+      if(hit) state.draggingJid=hit.id;
+
+    } else if(state.tool==='delete-joint') {
+      const hit=getJointAt(pos.x,pos.y);
+      if(hit) deleteJoint(hit.id);
+    }
+
+  } else if(state.mode==='pose'||state.mode==='animate') {
+    const hit=getJointAt(pos.x,pos.y);
+    if(hit) startPoseDrag(hit.id, pos.x, pos.y);
+  }
+}
+
+function onMove(e) {
+  e.preventDefault();
+  const pos=getPos(e);
+  drawCursor(pos.x, pos.y, pos.p, e.pointerType);
+
+  if(state.mode==='draw' && state.isDrawing) {
+    continueDraw(e);
+
+  } else if(state.mode==='rig') {
+    if(state.tool==='connect' && state.connectFrom) {
+      state._connPreview={x:pos.x,y:pos.y}; render();
+    } else if(state.tool==='move-joint' && state.draggingJid) {
+      const j=getJoint(state.draggingJid);
+      j.x=pos.x; j.y=pos.y; j.restX=pos.x; j.restY=pos.y;
+      state.bones.forEach(b=>{
+        const rj=getJoint(b.rootJid),tj=getJoint(b.tipJid);
+        if(rj&&tj){b.restAngle=angle(rj.x,rj.y,tj.x,tj.y);b.worldAngle=b.restAngle;b.length=dist(rj.x,rj.y,tj.x,tj.y);}
+      });
+      render();
+    }
+
+  } else if((state.mode==='pose'||state.mode==='animate') && state.draggingJid) {
+    updatePoseDrag(pos.x, pos.y);
+  }
+}
+
+function onUp(e) {
+  e.preventDefault();
+  if(state.mode==='draw') endDraw();
+  else if(state.mode==='rig') state.draggingJid=null;
+  else if(state.mode==='pose'||state.mode==='animate') endPoseDrag();
+}
+
+function getJointAt(x,y) {
+  let best=null, bestD=HIT_R;
+  state.joints.forEach(j=>{ const d=dist(j.x,j.y,x,y); if(d<bestD){bestD=d;best=j;} });
+  return best;
+}
+
+// ─── CURSOR ──────────────────────────────────────────────────────────────
+function drawCursor(x,y,pressure,type) {
+  curCtx.clearRect(0,0,cW(),cH());
+  const c=curCtx;
+  if(state.mode==='draw') {
+    const r=Math.max((state.strokeWidth/2)*(0.3+pressure*1.4), 2);
+    c.beginPath(); c.arc(x,y,r,0,Math.PI*2);
+    c.strokeStyle = state.tool==='eraser' ? 'rgba(255,255,255,0.5)' : state.drawColor;
+    c.lineWidth=1.2; c.stroke();
+    c.beginPath(); c.arc(x,y,1.5,0,Math.PI*2);
+    c.fillStyle = state.tool==='eraser' ? 'rgba(255,255,255,0.5)' : state.drawColor;
+    c.fill();
+  } else {
+    c.strokeStyle='rgba(200,200,220,0.5)'; c.lineWidth=1;
+    c.beginPath();
+    c.moveTo(x-8,y); c.lineTo(x+8,y);
+    c.moveTo(x,y-8); c.lineTo(x,y+8);
+    c.stroke();
+    c.beginPath(); c.arc(x,y,3,0,Math.PI*2);
+    c.strokeStyle='rgba(200,200,220,0.25)'; c.stroke();
+  }
+}
+
+// ─── MODE / TOOL SWITCHING ───────────────────────────────────────────────
+function setMode(mode) {
+  if(state.playing) togglePlay();
+  state.mode=mode; state.connectFrom=null; state._connPreview=null; state.draggingJid=null;
+
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
+  document.getElementById('draw-tools').style.display   = mode==='draw' ? '' : 'none';
+  document.getElementById('rig-tools').style.display    = mode==='rig'  ? '' : 'none';
+  document.getElementById('pose-tools').style.display   = (mode==='pose'||mode==='animate') ? '' : 'none';
+  document.getElementById('draw-props').style.display   = mode==='draw' ? '' : 'none';
+  document.getElementById('rig-props').style.display    = mode==='rig'  ? '' : 'none';
+  document.getElementById('pose-props').style.display   = (mode==='pose'||mode==='animate') ? '' : 'none';
+
+  const hints = {
+    draw:    'Draw mode — pencil/brush/eraser. Pressure-sensitive with Apple Pencil.',
+    rig:     'Rig mode — place joints, connect bones, then Auto-Assign strokes.',
+    pose:    'Pose mode — FK: drag any joint. IK: drag chain end. K to keyframe.',
+    animate: 'Animate mode — pose & keyframe. Drag auto-saves. Space to play.',
+  };
+  document.getElementById('hint-bar').textContent = hints[mode]||'';
+
+  if(mode==='draw')    setTool('pencil');
+  else if(mode==='rig') setTool('add-joint');
+  else setTool('fk');
+
+  if(mode==='rig') { updateBoneUI(); }
+  if(mode==='animate'||mode==='pose') updateTimelineUI();
+  render();
+}
+
+function setTool(tool) {
+  state.tool=tool;
+  document.querySelectorAll('.tool-btn').forEach(b=>b.classList.toggle('active',b.dataset.tool===tool));
+}
+
+// ─── ONION SKIN ──────────────────────────────────────────────────────────
+function toggleOnion(btn) { state.onionOn=!state.onionOn; btn.classList.toggle('on',state.onionOn); render(); }
+function setOnionDepth(d) {
+  state.onionDepth=d;
+  document.querySelectorAll('.depth-btn').forEach(b=>b.classList.toggle('active',+b.dataset.depth===d));
+  render();
+}
+
+// ─── MISC ────────────────────────────────────────────────────────────────
+function toggleGrid() { state.gridOn=!state.gridOn; render(); showToast(state.gridOn?'Grid on':'Grid off'); }
+function togglePressure(btn) { state.pressureSensitive=!state.pressureSensitive; btn.classList.toggle('on',state.pressureSensitive); }
+
+function confirmClear() {
+  if(!confirm('Clear everything? This cannot be undone.')) return;
+  pushHistory();
+  state.layers.forEach(l=>l.strokes=[]);
+  state.joints=[]; state.bones=[]; state.boneTracks={}; state.rootTracks={};
+  state.currentFrame=0;
+  updateLayerUI(); updateBoneUI(); updateTimelineUI(); render();
+  showToast('Canvas cleared');
+}
+
+// ─── UNDO ────────────────────────────────────────────────────────────────
+function pushHistory() {
+  const snap=JSON.stringify({
+    layers:state.layers, joints:state.joints, bones:state.bones,
+    boneTracks:state.boneTracks, rootTracks:state.rootTracks
+  });
+  state.history.push(snap);
+  if(state.history.length>state.MAX_HISTORY) state.history.shift();
+}
+
+function undo() {
+  if(state.history.length===0){showToast('Nothing to undo');return;}
+  const snap=JSON.parse(state.history.pop());
+  state.layers=snap.layers; state.joints=snap.joints; state.bones=snap.bones;
+  state.boneTracks=snap.boneTracks||{}; state.rootTracks=snap.rootTracks||{};
+  if(!getLayer(state.currentLayerId)) state.currentLayerId=state.layers[0]?.id||null;
+  updateLayerUI(); updateBoneUI(); updateTimelineUI(); render(); showToast('Undo');
+}
+
+// ─── IMPORT / EXPORT ─────────────────────────────────────────────────────
+function exportJSON() {
+  const data={version:'2.0',app:'MARROW',fps:state.fps,totalFrames:state.totalFrames,layers:state.layers,joints:state.joints,bones:state.bones,boneTracks:state.boneTracks,rootTracks:state.rootTracks};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='marrow-animation.json'; a.click(); showToast('Project exported');
+}
+
+function importJSON() {
+  const input=document.createElement('input'); input.type='file'; input.accept='.json';
+  input.onchange=e=>{
+    const file=e.target.files[0]; if(!file) return;
+    const reader=new FileReader();
+    reader.onload=evt=>{
+      try {
+        pushHistory();
+        const d=JSON.parse(evt.target.result);
+        if(d.layers)     state.layers=d.layers;
+        if(d.joints)     state.joints=d.joints;
+        if(d.bones)      state.bones=d.bones;
+        if(d.boneTracks) state.boneTracks=d.boneTracks;
+        if(d.rootTracks) state.rootTracks=d.rootTracks;
+        if(d.fps)        { state.fps=d.fps; document.getElementById('fps-lbl').textContent=d.fps+' fps'; }
+        if(d.totalFrames){ state.totalFrames=d.totalFrames; }
+        if(!getLayer(state.currentLayerId)) state.currentLayerId=state.layers[0]?.id||null;
+        updateLayerUI(); updateBoneUI(); updateTimelineUI(); render();
+        showToast('Project imported');
+      } catch(err){ showToast('Error loading file'); }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+// ─── KEYBOARD SHORTCUTS ──────────────────────────────────────────────────
+document.addEventListener('keydown', e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+  const ctrl=e.metaKey||e.ctrlKey;
+
+  switch(e.key) {
+    case ' ':      e.preventDefault(); togglePlay(); break;
+    case 'ArrowLeft':  e.preventDefault(); prevFrame(); break;
+    case 'ArrowRight': e.preventDefault(); nextFrame(); break;
+    case 'ArrowUp':    e.preventDefault(); goToStart(); break;
+    case 'ArrowDown':  e.preventDefault(); goToEnd();   break;
+    case 'z': case 'Z': if(ctrl){ e.preventDefault(); undo(); } break;
+    case 's': case 'S': if(ctrl){ e.preventDefault(); exportJSON(); } break;
+    case 'k': case 'K': if(state.mode==='animate'||state.mode==='pose'){ addKeyframeAll(); } break;
+    case 'c': case 'C': if(!ctrl) copyPose(); break;
+    case 'v': case 'V': if(!ctrl) pastePose(); break;
+    case 'g': case 'G': toggleGrid(); break;
+    case '1': setMode('draw'); break;
+    case '2': setMode('rig'); break;
+    case '3': setMode('pose'); break;
+    case '4': setMode('animate'); break;
+    // Tool shortcuts in current mode
+    case 'p': case 'P': if(state.mode==='draw') setTool('pencil'); break;
+    case 'b': case 'B': if(state.mode==='draw') setTool('brush'); break;
+    case 'e': case 'E': if(state.mode==='draw') setTool('eraser'); break;
+    case 'j': case 'J': if(state.mode==='rig') setTool('add-joint'); break;
+    case 'f': case 'F': if(state.mode==='pose'||state.mode==='animate') setTool('fk'); break;
+    case 'i': case 'I': if(state.mode==='pose'||state.mode==='animate') setTool('ik'); break;
+    case 'Escape': state.connectFrom=null; state._connPreview=null; render(); break;
+  }
+});
+
+// ─── SPLASH ──────────────────────────────────────────────────────────────
+function closeSplash() {
+  const s=document.getElementById('splash');
+  s.style.transition='opacity 0.4s';
+  s.style.opacity='0';
+  setTimeout(()=>s.style.display='none', 400);
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────
+function init() {
+  resizeCanvas();
+  addLayer('Background');
+  addLayer('Character');
+  updateLayerUI();
+  setMode('draw');
+  updateTimelineUI();
+  updateFrameReadout();
+  document.addEventListener('touchmove', e=>e.preventDefault(), {passive:false});
+  window.addEventListener('resize', resizeCanvas);
+}
+
+init();
+
+if('serviceWorker' in navigator) {
+  window.addEventListener('load', ()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>
