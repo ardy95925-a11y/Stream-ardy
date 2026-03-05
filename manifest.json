@@ -1,0 +1,20 @@
+{
+  "name": "MARROW — Bone Animator",
+  "short_name": "MARROW",
+  "description": "Professional 2D bone animation studio for iPad & Apple Pencil",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#08080f",
+  "theme_color": "#08080f",
+  "orientation": "landscape",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "graphics", "utilities"],
+  "screenshots": []
+}
